@@ -11,9 +11,12 @@ static void callback(struct mosquitto *mosquitto, void *foo,
 	printf("Callback!\n");
 }
 
-int mqtt_loop(struct mosquitto *mosquitto)
+int mqtt_handle(struct mosquitto *mosquitto)
 {
-	return -EINVAL;
+	int err;
+
+	err = mosquitto_loop(mosquitto, 0, 1);
+	return err;
 }
 
 int mqtt_init(struct mosquitto **handle, const char *host, int port,

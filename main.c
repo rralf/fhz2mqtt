@@ -19,7 +19,6 @@ int main(int argc, const char **argv)
 	const char *username = NULL, *password = NULL;
 	struct mosquitto *mosquitto;
 	struct hauscode hauscode;
-	struct payload payload;
 	unsigned int port;
 	int err, fd;
 
@@ -48,13 +47,15 @@ int main(int argc, const char **argv)
 		return fd;
 
 	do {
-		err = fhz_decode(fd, &payload);
+		err = fhz_handle(fd);
 		if (err && err != -EAGAIN)
 			error("Error decoding packet: %s\n", strerror(-err));
 
-		err = mqtt_loop(mosquitto);
+		err = mqtt_handle(mosquitto);
 		if (err)
 			error("MQTT error: %s\n", strerror(-err));
+
+		sleep(1);
 	} while(true);
 
 	err = 0;

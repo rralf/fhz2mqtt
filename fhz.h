@@ -18,3 +18,4 @@ struct payload {
 int fhz_open_serial(const char *device);
 int fhz_send(int fd, const struct payload *payload);
 int fhz_decode(int fd, struct payload *payload);
+int fhz_handle(int fd);

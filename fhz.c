@@ -26,6 +26,23 @@ static inline void hexdump(const unsigned char *data, size_t length)
 #define hexdump(...)
 #endif
 
+int fhz_handle(int fd)
+{
+	struct payload payload;
+	int err;
+
+	err = fhz_decode(fd, &payload);
+	if (err == -EAGAIN)
+		return 0;
+
+	if (err)
+		return err;
+
+	/* TBD handle payload */
+
+	return err;
+}
+
 int fhz_send(int fd, const struct payload *payload)
 {
 	unsigned char buffer[256-2];
@@ -60,7 +77,6 @@ int fhz_decode(int fd, struct payload *payload)
 {
 	unsigned char buffer[256 + 2];
 	unsigned char *payload_data;
-	struct timeval tv = {3, 0};
 	unsigned char payload_len;
 	const int maxfd = fd + 1;
 	unsigned char bc; /* the dump checksum */
@@ -73,7 +89,7 @@ int fhz_decode(int fd, struct payload *payload)
 	FD_SET(fd, &readset);
 
 	errno = EAGAIN;
-	ret = select(maxfd, &readset, NULL, NULL, &tv);
+	ret = select(maxfd, &readset, NULL, NULL, NULL);
 	if (ret <= 0) /* on error and timeout */
 		return -errno;
 
