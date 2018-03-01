@@ -17,6 +17,11 @@
 
 #include "mqtt.h"
 
+static int mqtt_subscribe(struct mosquitto *mosquitto)
+{
+	return mosquitto_subscribe(mosquitto, NULL, "/fhz/#", 0);
+}
+
 static void callback(struct mosquitto *mosquitto, void *foo,
 		     const struct mosquitto_message *message)
 {
@@ -28,7 +33,25 @@ int mqtt_handle(struct mosquitto *mosquitto)
 	int err;
 
 	err = mosquitto_loop(mosquitto, 0, 1);
-	return err;
+	if (err == MOSQ_ERR_CONN_LOST || err == MOSQ_ERR_NO_CONN) {
+		err = mosquitto_reconnect(mosquitto);
+		if (!err)
+			err = mqtt_subscribe(mosquitto);
+	}
+	switch (err) {
+		case MOSQ_ERR_SUCCESS:
+			break;
+		case MOSQ_ERR_CONN_LOST:
+			return -ECONNABORTED;
+		case MOSQ_ERR_NO_CONN:
+			return -ECANCELED;
+		case MOSQ_ERR_ERRNO:
+			return -errno;
+		default:
+			return -EINVAL;
+	}
+
+	return 0;
 }
 
 int mqtt_init(struct mosquitto **handle, const char *host, int port,
@@ -59,7 +82,7 @@ int mqtt_init(struct mosquitto **handle, const char *host, int port,
 		goto close_out;
 	}
 
-	err = mosquitto_subscribe(mosquitto, NULL, "/fhz/#", 0);
+	err = mqtt_subscribe(mosquitto);
 	if (err) {
 		fprintf(stderr, "mosquitto subscription error\n");
 	}
