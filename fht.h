@@ -7,9 +7,8 @@ struct hauscode {
 	unsigned char lower;
 } __attribute__((packed));
 
-int fht80b_set_temp(int fd, struct hauscode *hauscode, float temp);
-
-static inline int hauscode_from_string(const char *string, struct hauscode *hauscode)
+static inline int hauscode_from_string(const char *string,
+				       struct hauscode *hauscode)
 {
 	int i;
 
@@ -27,3 +26,5 @@ static inline int hauscode_from_string(const char *string, struct hauscode *haus
 
 	return 0;
 }
+
+int fht80b_set_temp(int fd, struct hauscode *hauscode, float temp);
