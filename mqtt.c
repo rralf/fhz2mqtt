@@ -5,6 +5,17 @@
 
 #include "mqtt.h"
 
+static void callback(struct mosquitto *mosquitto, void *foo,
+		     const struct mosquitto_message *message)
+{
+	printf("Callback!\n");
+}
+
+int mqtt_loop(struct mosquitto *mosquitto)
+{
+	return -EINVAL;
+}
+
 int mqtt_init(struct mosquitto **handle, const char *host, int port,
 	      const char *username, const char *password)
 {
@@ -32,6 +43,13 @@ int mqtt_init(struct mosquitto **handle, const char *host, int port,
 		fprintf(stderr, "mosquitto connect error\n");
 		goto close_out;
 	}
+
+	err = mosquitto_subscribe(mosquitto, NULL, "/fhz/#", 0);
+	if (err) {
+		fprintf(stderr, "mosquitto subscription error\n");
+	}
+
+	mosquitto_message_callback_set(mosquitto, callback);
 
 	*handle = mosquitto;
 	return 0;

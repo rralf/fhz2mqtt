@@ -16,11 +16,12 @@ static void __attribute__((noreturn)) usage(int code)
 
 int main(int argc, const char **argv)
 {
-	struct payload payload;
-	int err, fd;
-	struct mosquitto *mosquitto;
 	const char *username = NULL, *password = NULL;
+	struct mosquitto *mosquitto;
+	struct hauscode hauscode;
+	struct payload payload;
 	unsigned int port;
+	int err, fd;
 
 	if (argc < 5)
 		usage(-EINVAL);
@@ -32,6 +33,10 @@ int main(int argc, const char **argv)
 
 	port = strtoul(argv[4], NULL, 10);
 
+	err = hauscode_from_string(argv[2], &hauscode);
+	if (err)
+		return err;
+
 	err = mqtt_init(&mosquitto, argv[3], port, username, password);
 	if (err) {
 		fprintf(stderr, "MQTT connection failure\n");
@@ -42,20 +47,14 @@ int main(int argc, const char **argv)
 	if (fd < 0)
 		return fd;
 
-	struct hauscode hauscode;
-	hauscode_from_string("9601", &hauscode);
-
-	err = fht80b_set_temp(fd, &hauscode, 17);
-	if (err)
-		return -EINVAL;
-
 	do {
 		err = fhz_decode(fd, &payload);
-		if (err) {
-			if (err != -EAGAIN)
-				error("Error decoding packet: %s\n", strerror(-err));
-			continue;
-		}
+		if (err && err != -EAGAIN)
+			error("Error decoding packet: %s\n", strerror(-err));
+
+		err = mqtt_loop(mosquitto);
+		if (err)
+			error("MQTT error: %s\n", strerror(-err));
 	} while(true);
 
 	err = 0;
