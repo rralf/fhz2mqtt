@@ -6,6 +6,7 @@
 
 #include "fhz.h"
 #include "fht.h"
+#include "mqtt.h"
 
 static void __attribute__((noreturn)) usage(int code)
 {
@@ -17,9 +18,16 @@ int main(int argc, const char **argv)
 {
 	struct payload payload;
 	int err, fd;
+	struct mosquitto *mosquitto;
 
 	if (argc != 2)
 		usage(-EINVAL);
+
+	err = mqtt_init(&mosquitto, "127.0.0.1", 1883, NULL, NULL);
+	if (err) {
+		fprintf(stderr, "MQTT connection failure\n");
+		return -1;
+	}
 
 	fd = fhz_open_serial(argv[1]);
 	if (fd < 0)
@@ -43,6 +51,7 @@ int main(int argc, const char **argv)
 
 	err = 0;
 
+	mqtt_close(mosquitto);
 	close(fd);
 	return err;
 }
