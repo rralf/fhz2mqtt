@@ -10,7 +10,7 @@
 
 static void __attribute__((noreturn)) usage(int code)
 {
-	printf("Usage: fht2mqtt usb_port\n");
+	printf("Usage: fht2mqtt usb_port fht_hauscode mqtt_server mqtt_port [username] [password]\n");
 	exit(code);
 }
 
@@ -19,11 +19,20 @@ int main(int argc, const char **argv)
 	struct payload payload;
 	int err, fd;
 	struct mosquitto *mosquitto;
+	const char *username = NULL, *password = NULL;
+	unsigned int port;
 
-	if (argc != 2)
+	if (argc < 5)
 		usage(-EINVAL);
 
-	err = mqtt_init(&mosquitto, "127.0.0.1", 1883, NULL, NULL);
+	if (argc == 7) {
+		username = argv[5];
+		password = argv[6];
+	}
+
+	port = strtoul(argv[4], NULL, 10);
+
+	err = mqtt_init(&mosquitto, argv[3], port, username, password);
 	if (err) {
 		fprintf(stderr, "MQTT connection failure\n");
 		return -1;
