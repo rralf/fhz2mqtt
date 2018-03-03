@@ -20,6 +20,8 @@
 
 #include "fhz.h"
 
+#define ARRAY_SIZE(a) sizeof(a) / sizeof(a[0])
+
 #if 0
 const static struct payload payload_hello = {
 	.tt = 0xc9,
@@ -34,8 +36,55 @@ const static struct payload payload_status_serial = {
 };
 #endif
 
+struct fht_handler {
+	unsigned char magic[4];
+	int (*handler)(struct fht_decoded *decoded,
+		       const unsigned char *payload, ssize_t length);
+};
+
+const static int fht_handle_status(struct fht_decoded *decoded,
+				   const unsigned char *payload, ssize_t length)
+{
+	return -EINVAL;
+}
+
+const static int fht_handle_ack(struct fht_decoded *decoded,
+				const unsigned char *payload, ssize_t length)
+{
+	return -EINVAL;
+}
+
+const static struct fht_handler fht_handlers[] = {
+	/* status packet */
+	{
+		.magic = {0x09, 0x09, 0xa0, 0x01},
+		.handler = fht_handle_status,
+	},
+	/* ack packet */
+	{
+		.magic = {0x83, 0x09, 0x83, 0x01},
+		.handler = fht_handle_ack,
+	},
+};
+
+#define for_each_handler(handlers, handler, counter) \
+	for((counter) = 0, handler = (handlers); \
+	    (counter) < ARRAY_SIZE((handlers)); \
+	    (handler)++, (counter)++)
+
 int fht_decode(const struct payload *payload, struct fht_decoded *decoded)
 {
+	int i;
+	const struct fht_handler *h;
+
+	if (payload->len != 9 || payload->len != 10)
+		return -EINVAL;
+
+	for_each_handler(fht_handlers, h, i)
+		if (!memcmp(payload->data, h->magic, 4))
+			return h->handler(decoded, payload->data + 4,
+					  payload->len - 4);
+
 	return -EINVAL;
 }
 
