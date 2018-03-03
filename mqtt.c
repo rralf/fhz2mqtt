@@ -116,7 +116,7 @@ int mqtt_handle(struct mosquitto *mosquitto)
 	return 0;
 }
 
-int mqtt_init(struct mosquitto **handle, const char *host, int port,
+int mqtt_init(struct mosquitto **handle, int fd, const char *host, int port,
 	      const char *username, const char *password)
 {
 	struct mosquitto *mosquitto;
@@ -128,7 +128,7 @@ int mqtt_init(struct mosquitto **handle, const char *host, int port,
 	if (mosquitto_lib_init() != MOSQ_ERR_SUCCESS)
 		return -EINVAL;
 
-	mosquitto = mosquitto_new(NULL, true, NULL);
+	mosquitto = mosquitto_new(NULL, true, (void*)(size_t)fd);
 	if (!mosquitto)
 		return -errno;
 

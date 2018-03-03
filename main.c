@@ -57,15 +57,15 @@ int main(int argc, const char **argv)
 	if (err)
 		return err;
 
-	err = mqtt_init(&mosquitto, hostname, port, username, password);
-	if (err) {
-		fprintf(stderr, "MQTT connection failure\n");
-		return -1;
-	}
-
 	fd = fhz_open_serial(argv[1]);
 	if (fd < 0)
 		return fd;
+
+	err = mqtt_init(&mosquitto, fd, hostname, port, username, password);
+	if (err) {
+		fprintf(stderr, "MQTT connection failure\n");
+		goto close_out;
+	}
 
 	do {
 		err = fhz_handle(fd, &decoded);
@@ -87,6 +87,7 @@ int main(int argc, const char **argv)
 	err = 0;
 
 	mqtt_close(mosquitto);
+close_out:
 	close(fd);
 	return err;
 }
