@@ -29,9 +29,19 @@ static void callback(struct mosquitto *mosquitto, void *foo,
 	printf("Callback!\n");
 }
 
-int mqtt_publish(struct mosquitto *mosquitto, const struct fhz_decoded *decoded)
+static int mqtt_publish_fht(struct mosquitto *mosquitto, const struct fht_decoded *decoded)
 {
 	return -EINVAL;
+}
+
+int mqtt_publish(struct mosquitto *mosquitto, const struct fhz_decoded *decoded)
+{
+	switch (decoded->machine) {
+		case FHT:
+			return mqtt_publish_fht(mosquitto, &decoded->fht);
+		default:
+			return -EINVAL;
+	}
 }
 
 int mqtt_handle(struct mosquitto *mosquitto)
