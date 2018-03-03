@@ -18,9 +18,11 @@
 #include "mqtt.h"
 #include "fhz.h"
 
+#define TOPIC "/fhz/"
+
 static int mqtt_subscribe(struct mosquitto *mosquitto)
 {
-	return mosquitto_subscribe(mosquitto, NULL, "/fhz/#", 0);
+	return mosquitto_subscribe(mosquitto, NULL, TOPIC "#", 0);
 }
 
 static void callback(struct mosquitto *mosquitto, void *foo,
