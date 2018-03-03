@@ -17,7 +17,6 @@
 #include <unistd.h>
 
 #include "fhz.h"
-#include "fht.h"
 #include "mqtt.h"
 
 static void __attribute__((noreturn)) usage(int code)
@@ -30,6 +29,7 @@ int main(int argc, const char **argv)
 {
 	const char *username = NULL, *password = NULL;
 	struct mosquitto *mosquitto;
+	struct fhz_decoded decoded;
 	struct hauscode hauscode;
 	unsigned int port;
 	int err, fd;
@@ -59,7 +59,7 @@ int main(int argc, const char **argv)
 		return fd;
 
 	do {
-		err = fhz_handle(fd);
+		err = fhz_handle(fd, &decoded);
 		if (err && err != -EAGAIN)
 			error("Error decoding packet: %s\n", strerror(-err));
 

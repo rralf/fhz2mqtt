@@ -38,54 +38,7 @@ static inline void hexdump(const unsigned char *data, size_t length)
 #define hexdump(...)
 #endif
 
-int fhz_handle(int fd)
-{
-	struct payload payload;
-	int err;
-
-	err = fhz_decode(fd, &payload);
-	if (err == -EAGAIN)
-		return 0;
-
-	if (err)
-		return err;
-
-	/* TBD handle payload */
-
-	return err;
-}
-
-int fhz_send(int fd, const struct payload *payload)
-{
-	unsigned char buffer[256-2];
-	unsigned char bc;
-	int i, ret;
-
-	bc = 0;
-	for (i = 0; i < payload->len; i++)
-		bc += payload->data[i];
-	
-
-	buffer[0] = FHZ_MAGIC;
-	buffer[1] = payload->len + 2;
-	buffer[2] = payload->tt;
-	buffer[3] = bc;
-	memcpy(buffer + 4, payload->data, payload->len);
-
-	hexdump(buffer, payload->len + 4);
-
-#ifndef NOSEND
-	ret = write(fd, buffer, payload->len + 4);
-	if (ret != payload->len + 4) {
-		fprintf(stderr, "Error sending FHZ sequence\n");
-		return -EINVAL;
-	}
-#endif
-
-	return 0;
-}
-
-int fhz_decode(int fd, struct payload *payload)
+static int fhz_receive(int fd, struct payload *payload)
 {
 	unsigned char buffer[256 + 2];
 	unsigned char *payload_data;
@@ -160,6 +113,60 @@ int fhz_decode(int fd, struct payload *payload)
 	payload->tt = buffer[2];
 	memcpy(payload->data, payload_data, payload_len);
 	payload->len = payload_len;
+
+	return 0;
+}
+
+int fhz_handle(int fd, struct fhz_decoded *decoded)
+{
+	struct payload payload;
+	int err;
+
+	err = fhz_receive(fd, &payload);
+	if (err == -EAGAIN)
+		return 0;
+
+	if (err)
+		return err;
+
+	err = fht_decode(&payload, &decoded->fht);
+	if (!err) {
+		decoded->machine = FHT;
+		return 0;
+	} else if (err != -EINVAL) {
+		return err;
+	}
+
+	/* handle payloads other than FHT */
+
+	return err;
+}
+
+int fhz_send(int fd, const struct payload *payload)
+{
+	unsigned char buffer[256-2];
+	unsigned char bc;
+	int i, ret;
+
+	bc = 0;
+	for (i = 0; i < payload->len; i++)
+		bc += payload->data[i];
+
+	buffer[0] = FHZ_MAGIC;
+	buffer[1] = payload->len + 2;
+	buffer[2] = payload->tt;
+	buffer[3] = bc;
+	memcpy(buffer + 4, payload->data, payload->len);
+
+	hexdump(buffer, payload->len + 4);
+
+#ifndef NOSEND
+	ret = write(fd, buffer, payload->len + 4);
+	if (ret != payload->len + 4) {
+		fprintf(stderr, "Error sending FHZ sequence\n");
+		return -EINVAL;
+	}
+#endif
 
 	return 0;
 }

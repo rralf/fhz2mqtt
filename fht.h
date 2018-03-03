@@ -14,10 +14,16 @@
 #include <errno.h>
 #include <string.h>
 
+struct payload;
+
 struct hauscode {
 	unsigned char upper;
 	unsigned char lower;
 } __attribute__((packed));
+
+struct fht_decoded {
+	struct hauscode hauscode;
+};
 
 static inline int hauscode_from_string(const char *string,
 				       struct hauscode *hauscode)
@@ -39,4 +45,5 @@ static inline int hauscode_from_string(const char *string,
 	return 0;
 }
 
+int fht_decode(const struct payload *payload, struct fht_decoded *decoded);
 int fht80b_set_temp(int fd, struct hauscode *hauscode, float temp);

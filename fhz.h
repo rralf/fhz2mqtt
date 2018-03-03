@@ -10,6 +10,8 @@
  * the COPYING file in the top-level directory.
  */
 
+#include "fht.h"
+
 #define FHZ_MAGIC 0x81
 
 #define BAUDRATE B9600
@@ -27,7 +29,15 @@ struct payload {
 	unsigned char data[256];
 };
 
+struct fhz_decoded {
+	enum {
+		FHT,
+	} machine;
+	union {
+		struct fht_decoded fht;
+	};
+};
+
 int fhz_open_serial(const char *device);
 int fhz_send(int fd, const struct payload *payload);
-int fhz_decode(int fd, struct payload *payload);
-int fhz_handle(int fd);
+int fhz_handle(int fd, struct fhz_decoded *decoded);

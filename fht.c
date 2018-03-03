@@ -19,7 +19,6 @@
 #include <unistd.h>
 
 #include "fhz.h"
-#include "fht.h"
 
 #if 0
 const static struct payload payload_hello = {
@@ -34,6 +33,11 @@ const static struct payload payload_status_serial = {
 	.data = {0xc9, 0x01, 0x84, 0x57, 0x02, 0x08},
 };
 #endif
+
+int fht_decode(const struct payload *payload, struct fht_decoded *decoded)
+{
+	return -EINVAL;
+}
 
 int fht80b_set_temp(int fd, struct hauscode *hauscode, float temp)
 {
