@@ -157,12 +157,14 @@ int fhz_send(int fd, const struct payload *payload)
 
 	hexdump(buffer, payload->len + 4);
 
-#ifndef NOSEND
+#ifndef NO_SEND
 	ret = write(fd, buffer, payload->len + 4);
 	if (ret != payload->len + 4) {
 		fprintf(stderr, "Error sending FHZ sequence\n");
 		return -EINVAL;
 	}
+#else
+	(void)ret; /* surpress compiler warning */
 #endif
 
 	return 0;
