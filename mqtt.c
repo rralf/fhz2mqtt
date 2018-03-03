@@ -16,6 +16,7 @@
 #include <stdio.h>
 
 #include "mqtt.h"
+#include "fhz.h"
 
 static int mqtt_subscribe(struct mosquitto *mosquitto)
 {
@@ -26,6 +27,11 @@ static void callback(struct mosquitto *mosquitto, void *foo,
 		     const struct mosquitto_message *message)
 {
 	printf("Callback!\n");
+}
+
+int mqtt_publish(struct mosquitto *mosquitto, const struct fhz_decoded *decoded)
+{
+	return -EINVAL;
 }
 
 int mqtt_handle(struct mosquitto *mosquitto)

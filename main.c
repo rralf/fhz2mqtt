@@ -71,6 +71,11 @@ int main(int argc, const char **argv)
 		err = fhz_handle(fd, &decoded);
 		if (err && err != -EAGAIN)
 			error("Error decoding packet: %s\n", strerror(-err));
+		else if (!err) {
+			err = mqtt_publish(mosquitto, &decoded);
+			if (err)
+				fprintf(stderr, "Unable to publish FHZ message to mqtt\n");
+		}
 
 		err = mqtt_handle(mosquitto);
 		if (err)
