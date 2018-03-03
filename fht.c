@@ -93,7 +93,7 @@ int fht_decode(const struct payload *payload, struct fht_decoded *decoded)
 	int i;
 	const struct fht_handler *h;
 
-	if (payload->len != 9 || payload->len != 10)
+	if (!(payload->len == 9 || payload->len == 10))
 		return -EINVAL;
 
 	for_each_handler(fht_handlers, h, i)
