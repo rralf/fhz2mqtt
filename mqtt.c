@@ -39,10 +39,10 @@ static int mqtt_publish_fht(struct mosquitto *mosquitto, const struct fht_decode
 int mqtt_publish(struct mosquitto *mosquitto, const struct fhz_decoded *decoded)
 {
 	switch (decoded->machine) {
-		case FHT:
-			return mqtt_publish_fht(mosquitto, &decoded->fht);
-		default:
-			return -EINVAL;
+	case FHT:
+		return mqtt_publish_fht(mosquitto, &decoded->fht);
+	default:
+		return -EINVAL;
 	}
 }
 
@@ -57,16 +57,16 @@ int mqtt_handle(struct mosquitto *mosquitto)
 			err = mqtt_subscribe(mosquitto);
 	}
 	switch (err) {
-		case MOSQ_ERR_SUCCESS:
-			break;
-		case MOSQ_ERR_CONN_LOST:
-			return -ECONNABORTED;
-		case MOSQ_ERR_NO_CONN:
-			return -ECANCELED;
-		case MOSQ_ERR_ERRNO:
-			return -errno;
-		default:
-			return -EINVAL;
+	case MOSQ_ERR_SUCCESS:
+		break;
+	case MOSQ_ERR_CONN_LOST:
+		return -ECONNABORTED;
+	case MOSQ_ERR_NO_CONN:
+		return -ECANCELED;
+	case MOSQ_ERR_ERRNO:
+		return -errno;
+	default:
+		return -EINVAL;
 	}
 
 	return 0;
