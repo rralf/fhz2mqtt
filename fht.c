@@ -38,6 +38,7 @@ const static struct payload payload_status_serial = {
 
 struct fht_handler {
 	unsigned char magic[4];
+	enum fht_type type;
 	int (*handler)(struct fht_decoded *decoded,
 		       const unsigned char *payload, ssize_t length);
 };
@@ -45,22 +46,26 @@ struct fht_handler {
 const static int fht_handle_status(struct fht_decoded *decoded,
 				   const unsigned char *payload, ssize_t length)
 {
-	return -EINVAL;
+	if (length != 4)
+		return -EINVAL;
+
+	decoded->status.func = payload[0];
+	decoded->status.status = payload[2];
+	decoded->status.param = payload[3];
+	return 0;
 }
 
 const static int fht_handle_ack(struct fht_decoded *decoded,
 				const unsigned char *payload, ssize_t length)
 {
-	if (length != 5)
+	if (length != 3)
 		return -EINVAL;
 
-	if (payload[2] != 0x3e)
+	if (payload[0] != 0x3e)
 		return -EINVAL;
 
-	decoded->type = ACK;
-	decoded->hauscode = *(const struct hauscode*)payload;
-	decoded->ack.location = payload[4];
-	decoded->ack.byte = payload[3];
+	decoded->ack.location = payload[2];
+	decoded->ack.byte = payload[1];
 
 	return 0;
 }
@@ -92,9 +97,13 @@ int fht_decode(const struct payload *payload, struct fht_decoded *decoded)
 		return -EINVAL;
 
 	for_each_handler(fht_handlers, h, i)
-		if (!memcmp(payload->data, h->magic, 4))
-			return h->handler(decoded, payload->data + 4,
-					  payload->len - 4);
+		if (!memcmp(payload->data, h->magic, 4)) {
+			decoded->hauscode = *(const struct hauscode*)
+				(payload->data + 4);
+			decoded->type = h->type;
+			return h->handler(decoded, payload->data + 6,
+					  payload->len - 6);
+		}
 
 	return -EINVAL;
 }
