@@ -14,7 +14,8 @@ OBJS = fhz.o fht.o mqtt.o main.o
 
 CFLAGS := -ggdb -O0 -Wall -Wstrict-prototypes -Wmissing-prototypes -Werror
 
-CFLAGS += -DDEBUG -DNO_SEND
+CFLAGS += -DDEBUG
+# CFLAGS += -DNO_SEND
 
 all: fhz2mqtt
 
