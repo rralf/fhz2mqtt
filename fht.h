@@ -22,6 +22,7 @@ struct hauscode {
 } __attribute__((packed));
 
 struct fht_decoded {
+	enum {STATUS, ACK} type;
 	struct hauscode hauscode;
 };
 
