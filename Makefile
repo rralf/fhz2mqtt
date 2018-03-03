@@ -27,4 +27,4 @@ clean:
 	rm -fv fhz2mqtt
 
 test: fhz2mqtt
-	./fhz2mqtt /dev/ttyUSB0 9601 127.0.0.1 1883
+	./fhz2mqtt /dev/ttyUSB0 9601
