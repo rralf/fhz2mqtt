@@ -18,22 +18,66 @@
 #include "mqtt.h"
 #include "fhz.h"
 
-#define TOPIC "/fhz/"
+#define S_FHZ "fhz/"
+#define S_FHT "fht/"
+#define S_SET "set/"
+
+#define TOPIC "/" S_FHZ
+#define TOPIC_SUBSCRIBE TOPIC S_SET
+#define TOPIC_FHT TOPIC S_FHT
 
 static int mqtt_subscribe(struct mosquitto *mosquitto)
 {
-	return mosquitto_subscribe(mosquitto, NULL, TOPIC "#", 0);
+	return mosquitto_subscribe(mosquitto, NULL, TOPIC_SUBSCRIBE "#", 0);
 }
 
 static void callback(struct mosquitto *mosquitto, void *foo,
 		     const struct mosquitto_message *message)
 {
-	printf("Callback!\n");
+	const char *topic = message->topic + sizeof(TOPIC_SUBSCRIBE) - 1;
+
+	if (!strncmp(topic, S_FHT, sizeof(S_FHT) - 1)) {
+	}
 }
 
 static int mqtt_publish_fht(struct mosquitto *mosquitto, const struct fht_decoded *decoded)
 {
-	return -EINVAL;
+	char topic[64];
+	char message[64];
+	int len;
+
+	switch (decoded->type) {
+	case STATUS:
+		snprintf(topic, sizeof(topic),
+			 TOPIC_FHT "%02u%02u/status/%02x",
+			 decoded->hauscode.upper, decoded->hauscode.lower,
+			 decoded->status.func);
+		len = snprintf(message, sizeof(message), "%02x %02x",
+			       decoded->status.status, decoded->status.param);
+		break;
+	case ACK:
+		snprintf(topic, sizeof(topic),
+			 TOPIC_FHT "%02u%02u/ack/%02x",
+			 decoded->hauscode.upper, decoded->hauscode.lower,
+			 decoded->ack.location);
+		len = snprintf(message, sizeof(message), "%02x",
+			       decoded->ack.byte);
+		break;
+	default:
+		return -EINVAL;
+	}
+
+
+#ifdef DEBUG
+	printf("%s: %s\n", topic, message);
+#endif
+#ifndef NO_SEND
+	mosquitto_publish(mosquitto, NULL, topic, len, message, 0, false);
+#else
+	(void)len; /* surpress compiler warning by pretending use of variable */
+#endif
+
+	return 0;
 }
 
 int mqtt_publish(struct mosquitto *mosquitto, const struct fhz_decoded *decoded)
