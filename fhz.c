@@ -123,9 +123,6 @@ int fhz_handle(int fd, struct fhz_decoded *decoded)
 	int err;
 
 	err = fhz_receive(fd, &payload);
-	if (err == -EAGAIN)
-		return 0;
-
 	if (err)
 		return err;
 
