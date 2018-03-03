@@ -24,6 +24,12 @@ struct hauscode {
 struct fht_decoded {
 	enum {STATUS, ACK} type;
 	struct hauscode hauscode;
+	union {
+		struct {
+			unsigned char location;
+			unsigned char byte;
+		} ack;
+	};
 };
 
 static inline int hauscode_from_string(const char *string,

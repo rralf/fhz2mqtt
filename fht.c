@@ -51,7 +51,18 @@ const static int fht_handle_status(struct fht_decoded *decoded,
 const static int fht_handle_ack(struct fht_decoded *decoded,
 				const unsigned char *payload, ssize_t length)
 {
-	return -EINVAL;
+	if (length != 5)
+		return -EINVAL;
+
+	if (payload[2] != 0x3e)
+		return -EINVAL;
+
+	decoded->type = ACK;
+	decoded->hauscode = *(const struct hauscode*)payload;
+	decoded->ack.location = payload[4];
+	decoded->ack.byte = payload[3];
+
+	return 0;
 }
 
 const static struct fht_handler fht_handlers[] = {
