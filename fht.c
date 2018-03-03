@@ -73,11 +73,13 @@ const static int fht_handle_ack(struct fht_decoded *decoded,
 const static struct fht_handler fht_handlers[] = {
 	/* status packet */
 	{
+		.type = STATUS,
 		.magic = {0x09, 0x09, 0xa0, 0x01},
 		.handler = fht_handle_status,
 	},
 	/* ack packet */
 	{
+		.type = ACK,
 		.magic = {0x83, 0x09, 0x83, 0x01},
 		.handler = fht_handle_ack,
 	},
