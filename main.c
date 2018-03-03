@@ -19,36 +19,45 @@
 #include "fhz.h"
 #include "mqtt.h"
 
+#define MQTT_DEFAULT_PORT 1883
+#define MQTT_DEFAULT_HOSTNAME "localhost"
+
 static void __attribute__((noreturn)) usage(int code)
 {
-	printf("Usage: fht2mqtt usb_port fht_hauscode mqtt_server mqtt_port [username] [password]\n");
+	printf("Usage: fht2mqtt usb_port fht_hauscode "
+	       "[mqtt_server] [mqtt_port] [username] [password]\n");
 	exit(code);
 }
 
 int main(int argc, const char **argv)
 {
 	const char *username = NULL, *password = NULL;
+	const char *hostname = MQTT_DEFAULT_HOSTNAME;
+	unsigned int port = MQTT_DEFAULT_PORT;
 	struct mosquitto *mosquitto;
 	struct fhz_decoded decoded;
 	struct hauscode hauscode;
-	unsigned int port;
 	int err, fd;
 
-	if (argc < 5)
+	if (argc < 5 && argc != 3)
 		usage(-EINVAL);
+
+	if (argc >= 4)
+		hostname = argv[3];
+
+	if (argc >= 5)
+		port = strtoul(argv[4], NULL, 10);
 
 	if (argc == 7) {
 		username = argv[5];
 		password = argv[6];
 	}
 
-	port = strtoul(argv[4], NULL, 10);
-
 	err = hauscode_from_string(argv[2], &hauscode);
 	if (err)
 		return err;
 
-	err = mqtt_init(&mosquitto, argv[3], port, username, password);
+	err = mqtt_init(&mosquitto, hostname, port, username, password);
 	if (err) {
 		fprintf(stderr, "MQTT connection failure\n");
 		return -1;
