@@ -24,8 +24,10 @@ struct hauscode {
 struct fht_decoded {
 	enum {STATUS, ACK} type;
 	struct hauscode hauscode;
-	const char *command;
-	char value[32];
+	const char *topic1;
+	const char *topic2;
+	char value1[32];
+	char value2[32];
 };
 
 static inline int hauscode_from_string(const char *string,

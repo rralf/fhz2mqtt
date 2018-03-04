@@ -23,11 +23,14 @@
 
 #define ARRAY_SIZE(a) sizeof(a) / sizeof(a[0])
 
+#define FHT_IS_VALVE 0x00
 #define FHT_MODE 0x3e
 #define  FHT_MODE_AUTO 0
 #define  FHT_MODE_MANU 1
 #define  FHT_MODE_HOLI 2
 #define FHT_DESIRED_TEMP 0x41
+#define FHT_IS_TEMP_LOW 0x42
+#define FHT_IS_TEMP_HIGH 0x43
 #define FHT_MANU_TEMP 0x45
 
 const static char s_mode_auto[] = "auto";
@@ -81,6 +84,21 @@ static void mode_to_str(char *dst, int len, unsigned char mode)
 	}
 }
 
+static int input_not_accepted(const char *payload)
+{
+	return -EPERM;
+}
+
+static void fht_is_temp_to_str(char *dst, int len, unsigned char value)
+{
+	snprintf(dst, len, "%u", value);
+}
+
+static void fht_percentage_to_str(char *dst, int len, unsigned char value)
+{
+	snprintf(dst, len, "%u%%", value);
+}
+
 struct fht_command {
 	unsigned char function_id;
 	const char *name;
@@ -94,6 +112,12 @@ struct fht_command {
 	    (counter)++, (command)++)
 
 const static struct fht_command fht_commands[] = {
+	/* is valve */ {
+		.function_id = FHT_IS_VALVE,
+		.name = "is-valve",
+		.input_conversion = input_not_accepted,
+		.output_conversion = fht_percentage_to_str,
+	},
 	/* mode */ {
 		.function_id = FHT_MODE,
 		.name = "mode",
@@ -105,6 +129,18 @@ const static struct fht_command fht_commands[] = {
 		.name = "desired-temp",
 		.input_conversion = payload_to_fht_temp,
 		.output_conversion = fht_temp_to_str,
+	},
+	/* is temp low */ {
+		.function_id = FHT_IS_TEMP_LOW,
+		.name = "is-temp-low",
+		.input_conversion = input_not_accepted,
+		.output_conversion = fht_is_temp_to_str,
+	},
+	/* is temp high */ {
+		.function_id = FHT_IS_TEMP_HIGH,
+		.name = "is-temp-high",
+		.input_conversion = input_not_accepted,
+		.output_conversion = fht_is_temp_to_str,
 	},
 	/* manu temp */ {
 		.function_id = FHT_MANU_TEMP,
@@ -143,9 +179,9 @@ int fht_decode(const struct payload *payload, struct fht_decoded *decoded)
 	for_each_fht_command(fht_commands, fht_command, i) {
 		if (fht_command->function_id != cmd)
 			continue;
-		decoded->command = fht_command->name;
-		fht_command->output_conversion(decoded->value,
-					       sizeof(decoded->value), val);
+		decoded->topic1 = fht_command->name;
+		fht_command->output_conversion(decoded->value1,
+					       sizeof(decoded->value1), val);
 		return 0;
 	}
 

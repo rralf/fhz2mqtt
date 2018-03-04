@@ -85,14 +85,14 @@ static int mqtt_publish_fht(struct mosquitto *mosquitto, const struct fht_decode
 
 	snprintf(topic, sizeof(topic), TOPIC_FHT "%02u%02u/%s/%s",
 			 decoded->hauscode.upper, decoded->hauscode.lower,
-			 type, decoded->command);
+			 type, decoded->topic1);
 
 #ifdef DEBUG
-	printf("%s: %s\n", topic, decoded->value);
+	printf("%s: %s\n", topic, decoded->value1);
 #endif
 #ifndef NO_SEND
-	mosquitto_publish(mosquitto, NULL, topic, strlen(decoded->value),
-			  decoded->value, 0, false);
+	mosquitto_publish(mosquitto, NULL, topic, strlen(decoded->value1),
+			  decoded->value1, 0, false);
 #endif
 
 	return 0;
