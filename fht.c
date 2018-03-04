@@ -31,6 +31,7 @@
 #define FHT_DESIRED_TEMP 0x41
 #define FHT_IS_TEMP_LOW 0x42
 #define FHT_IS_TEMP_HIGH 0x43
+#define FHT_STATUS 0x44 /* exceptional case! */
 #define FHT_MANU_TEMP 0x45
 
 const static char s_mode_auto[] = "auto";
@@ -175,6 +176,18 @@ int fht_decode(const struct payload *payload, struct fht_decoded *decoded)
 		return -EINVAL;
 
 	decoded->hauscode = *(const struct hauscode*)(payload->data + 4);
+
+	if (cmd == FHT_STATUS) {
+		decoded->topic1 = "window";
+		snprintf(decoded->value1, sizeof(decoded->value1), "%s",
+			 val & (1 << 5) ? "open" : "close");
+		decoded->topic2 = "battery";
+		snprintf(decoded->value2, sizeof(decoded->value2), "%s",
+			 val & (1 << 0) ? "empty" : "ok");
+		return 0;
+	} else {
+		decoded->topic2 = NULL;
+	}
 
 	for_each_fht_command(fht_commands, fht_command, i) {
 		if (fht_command->function_id != cmd)

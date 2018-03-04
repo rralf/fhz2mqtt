@@ -76,24 +76,36 @@ static void callback(struct mosquitto *mosquitto, void *v_fd,
 		printf("Unable to parse request: %s\n", strerror(-err));
 }
 
+static void publish(struct mosquitto *mosquitto, const char *type,
+		    const struct hauscode *hauscode, const char *topic,
+		    const char *value)
+{
+	char mqtt_topic[64];
+
+	snprintf(mqtt_topic, sizeof(mqtt_topic), TOPIC_FHT "%02u%02u/%s/%s",
+		 hauscode->upper, hauscode->lower, type, topic);
+
+#ifdef DEBUG
+	printf("%s: %s\n", topic, value);
+#endif
+#ifndef NO_SEND
+	mosquitto_publish(mosquitto, NULL, mqtt_topic, strlen(value), value, 0,
+			  false);
+#endif
+
+}
+
 static int mqtt_publish_fht(struct mosquitto *mosquitto, const struct fht_decoded *decoded)
 {
-	char topic[64];
 	const char *type;
 
 	type = decoded->type == ACK ? "ack" : "status";
 
-	snprintf(topic, sizeof(topic), TOPIC_FHT "%02u%02u/%s/%s",
-			 decoded->hauscode.upper, decoded->hauscode.lower,
-			 type, decoded->topic1);
-
-#ifdef DEBUG
-	printf("%s: %s\n", topic, decoded->value1);
-#endif
-#ifndef NO_SEND
-	mosquitto_publish(mosquitto, NULL, topic, strlen(decoded->value1),
-			  decoded->value1, 0, false);
-#endif
+	publish(mosquitto, type, &decoded->hauscode,
+		decoded->topic1, decoded->value1);
+	if (decoded->topic2)
+		publish(mosquitto, type, &decoded->hauscode,
+			decoded->topic2, decoded->value2);
 
 	return 0;
 }
