@@ -30,6 +30,10 @@
 #define FHT_DESIRED_TEMP 0x41
 #define FHT_MANU_TEMP 0x45
 
+const static char s_mode_auto[] = "auto";
+const static char s_mode_holiday[] = "holiday";
+const static char s_mode_manual[] = "manual";
+
 static int payload_to_fht_temp(const char *payload)
 {
 	float temp;
@@ -42,22 +46,46 @@ static int payload_to_fht_temp(const char *payload)
 	return (unsigned char)(temp/0.5);
 }
 
+static void fht_temp_to_str(char *dst, int len, unsigned char temp)
+{
+	snprintf(dst, len, "%0.1f", (float)temp * 0.5);
+}
+
 static int payload_to_mode(const char *payload)
 {
-	if (!strcasecmp(payload, "auto"))
+	if (!strcasecmp(payload, s_mode_auto))
 		return FHT_MODE_AUTO;
-	if (!strcasecmp(payload, "manual"))
+	if (!strcasecmp(payload, s_mode_manual))
 		return FHT_MODE_MANU;
-	if (!strcasecmp(payload, "holiday"))
+	if (!strcasecmp(payload, s_mode_manual))
 		return FHT_MODE_HOLI;
 
 	return -EINVAL;
+}
+
+static void mode_to_str(char *dst, int len, unsigned char mode)
+{
+	switch (mode) {
+	case FHT_MODE_AUTO:
+		strncpy(dst, s_mode_auto, len);
+		break;
+	case FHT_MODE_MANU:
+		strncpy(dst, s_mode_manual, len);
+		break;
+	case FHT_MODE_HOLI:
+		strncpy(dst, s_mode_holiday, len);
+		break;
+	default:
+		strncpy(dst, "unknown", len);
+		break;
+	}
 }
 
 struct fht_command {
 	unsigned char function_id;
 	const char *name;
 	int (*input_conversion)(const char *payload);
+	void (*output_conversion)(char *dst, int len, unsigned char value);
 };
 
 #define for_each_fht_command(commands, command, counter) \
@@ -70,23 +98,56 @@ const static struct fht_command fht_commands[] = {
 		.function_id = FHT_MODE,
 		.name = "mode",
 		.input_conversion = payload_to_mode,
+		.output_conversion = mode_to_str,
 	},
 	/* desired temp */ {
 		.function_id = FHT_DESIRED_TEMP,
 		.name = "desired-temp",
 		.input_conversion = payload_to_fht_temp,
+		.output_conversion = fht_temp_to_str,
 	},
 	/* manu temp */ {
 		.function_id = FHT_MANU_TEMP,
 		.name = "manu-temp",
 		.input_conversion = payload_to_fht_temp,
+		.output_conversion = fht_temp_to_str,
 	},
 };
 
 int fht_decode(const struct payload *payload, struct fht_decoded *decoded)
 {
-	if (!(payload->len == 9 || payload->len == 10))
+	const static unsigned char magic_ack[] = {0x83, 0x09, 0x83, 0x01};
+	const static unsigned char magic_status[] = {0x09, 0x09, 0xa0, 0x01};
+	const struct fht_command *fht_command;
+	unsigned char cmd, val;
+	int i;
+
+	if (payload->len < 9)
 		return -EINVAL;
+
+	if (!memcmp(payload->data, magic_ack, sizeof(magic_ack))) {
+		decoded->type = ACK;
+		cmd = payload->data[6];
+		val = payload->data[7];
+	} else if (!memcmp(payload->data, magic_status, sizeof(magic_status))) {
+		if (payload->len != 10)
+			return -EINVAL;
+		decoded->type = STATUS;
+		cmd = payload->data[6];
+		val = payload->data[9];
+	} else
+		return -EINVAL;
+
+	decoded->hauscode = *(const struct hauscode*)(payload->data + 4);
+
+	for_each_fht_command(fht_commands, fht_command, i) {
+		if (fht_command->function_id != cmd)
+			continue;
+		decoded->command = fht_command->name;
+		fht_command->output_conversion(decoded->value,
+					       sizeof(decoded->value), val);
+		return 0;
+	}
 
 	return -EINVAL;
 }
