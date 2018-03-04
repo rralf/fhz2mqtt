@@ -176,6 +176,7 @@ int fht_decode(const struct payload *payload, struct fht_decoded *decoded)
 		return -EINVAL;
 
 	decoded->hauscode = *(const struct hauscode*)(payload->data + 4);
+	decoded->topic2 = NULL;
 
 	if (cmd == FHT_STATUS) {
 		decoded->topic1 = "window";
@@ -185,8 +186,6 @@ int fht_decode(const struct payload *payload, struct fht_decoded *decoded)
 		snprintf(decoded->value2, sizeof(decoded->value2), "%s",
 			 val & (1 << 0) ? "empty" : "ok");
 		return 0;
-	} else {
-		decoded->topic2 = NULL;
 	}
 
 	for_each_fht_command(fht_commands, fht_command, i) {
