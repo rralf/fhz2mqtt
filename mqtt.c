@@ -79,38 +79,20 @@ static void callback(struct mosquitto *mosquitto, void *v_fd,
 static int mqtt_publish_fht(struct mosquitto *mosquitto, const struct fht_decoded *decoded)
 {
 	char topic[64];
-	char message[64];
-	int len;
+	const char *type;
 
-	switch (decoded->type) {
-	case STATUS:
-		snprintf(topic, sizeof(topic),
-			 TOPIC_FHT "%02u%02u/status/%02x",
-			 decoded->hauscode.upper, decoded->hauscode.lower,
-			 decoded->status.func);
-		len = snprintf(message, sizeof(message), "%02x %02x",
-			       decoded->status.status, decoded->status.param);
-		break;
-	case ACK:
-		snprintf(topic, sizeof(topic),
-			 TOPIC_FHT "%02u%02u/ack/%02x",
-			 decoded->hauscode.upper, decoded->hauscode.lower,
-			 decoded->ack.location);
-		len = snprintf(message, sizeof(message), "%02x Unknown: %02x",
-			       decoded->ack.byte, decoded->ack.unknown);
-		break;
-	default:
-		return -EINVAL;
-	}
+	type = decoded->type == ACK ? "ack" : "status";
 
+	snprintf(topic, sizeof(topic), TOPIC_FHT "%02u%02u/%s/%s",
+			 decoded->hauscode.upper, decoded->hauscode.lower,
+			 type, decoded->command);
 
 #ifdef DEBUG
-	printf("%s: %s\n", topic, message);
+	printf("%s: %s\n", topic, decoded->value);
 #endif
 #ifndef NO_SEND
-	mosquitto_publish(mosquitto, NULL, topic, len, message, 0, false);
-#else
-	(void)len; /* surpress compiler warning by pretending use of variable */
+	mosquitto_publish(mosquitto, NULL, topic, strlen(decoded->value),
+			  decoded->value, 0, false);
 #endif
 
 	return 0;

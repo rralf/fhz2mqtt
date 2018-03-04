@@ -21,24 +21,11 @@ struct hauscode {
 	unsigned char lower;
 } __attribute__((packed));
 
-enum fht_type {STATUS, ACK};
-
 struct fht_decoded {
-	enum fht_type type;
+	enum {STATUS, ACK} type;
 	struct hauscode hauscode;
-	union {
-		struct {
-			unsigned char unknown;
-			unsigned char location;
-			unsigned char byte;
-		} ack;
-
-		struct {
-			unsigned char func;
-			unsigned char status;
-			unsigned char param;
-		} status;
-	};
+	const char *command;
+	char value[32];
 };
 
 static inline int hauscode_from_string(const char *string,
