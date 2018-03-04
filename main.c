@@ -24,7 +24,7 @@
 
 static void __attribute__((noreturn)) usage(int code)
 {
-	printf("Usage: fht2mqtt usb_port fht_hauscode "
+	printf("Usage: fht2mqtt usb_port"
 	       "[mqtt_server] [mqtt_port] [username] [password]\n");
 	exit(code);
 }
@@ -36,26 +36,21 @@ int main(int argc, const char **argv)
 	unsigned int port = MQTT_DEFAULT_PORT;
 	struct mosquitto *mosquitto;
 	struct fhz_decoded decoded;
-	struct hauscode hauscode;
 	int err, fd;
 
-	if (argc < 5 && argc != 3)
+	if (argc < 4 && argc != 2)
 		usage(-EINVAL);
 
+	if (argc >= 3)
+		hostname = argv[2];
+
 	if (argc >= 4)
-		hostname = argv[3];
+		port = strtoul(argv[3], NULL, 10);
 
-	if (argc >= 5)
-		port = strtoul(argv[4], NULL, 10);
-
-	if (argc == 7) {
-		username = argv[5];
-		password = argv[6];
+	if (argc == 6) {
+		username = argv[4];
+		password = argv[5];
 	}
-
-	err = hauscode_from_string(argv[2], &hauscode);
-	if (err)
-		return err;
 
 	fd = fhz_open_serial(argv[1]);
 	if (fd < 0)
