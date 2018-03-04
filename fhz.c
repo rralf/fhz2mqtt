@@ -130,7 +130,7 @@ int fhz_handle(int fd, struct fhz_decoded *decoded)
 	if (!err) {
 		decoded->machine = FHT;
 		return 0;
-	} else if (err != -EINVAL) {
+	} else if (!(err == -EINVAL || err == -EAGAIN)) {
 		return err;
 	}
 
