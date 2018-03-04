@@ -23,6 +23,10 @@
 
 #define ARRAY_SIZE(a) sizeof(a) / sizeof(a[0])
 
+#define FHT_MODE 0x3e
+#define  FHT_MODE_AUTO 0
+#define  FHT_MODE_MANU 1
+#define  FHT_MODE_HOLI 2
 #define FHT_DESIRED_TEMP 0x41
 #define FHT_MANU_TEMP 0x45
 
@@ -38,6 +42,18 @@ static int payload_to_fht_temp(const char *payload)
 	return (unsigned char)(temp/0.5);
 }
 
+static int payload_to_mode(const char *payload)
+{
+	if (!strcasecmp(payload, "auto"))
+		return FHT_MODE_AUTO;
+	if (!strcasecmp(payload, "manual"))
+		return FHT_MODE_MANU;
+	if (!strcasecmp(payload, "holiday"))
+		return FHT_MODE_HOLI;
+
+	return -EINVAL;
+}
+
 struct fht_command {
 	unsigned char function_id;
 	const char *name;
@@ -50,6 +66,11 @@ struct fht_command {
 	    (counter)++, (command)++)
 
 const static struct fht_command fht_commands[] = {
+	/* mode */ {
+		.function_id = FHT_MODE,
+		.name = "mode",
+		.input_conversion = payload_to_mode,
+	},
 	/* desired temp */ {
 		.function_id = FHT_DESIRED_TEMP,
 		.name = "desired-temp",
