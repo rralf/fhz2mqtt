@@ -50,9 +50,14 @@ struct fht_command {
 	    (counter)++, (command)++)
 
 const static struct fht_command fht_commands[] = {
-	{
+	/* desired temp */ {
 		.function_id = FHT_DESIRED_TEMP,
 		.name = "desired-temp",
+		.input_conversion = payload_to_fht_temp,
+	},
+	/* manu temp */ {
+		.function_id = FHT_MANU_TEMP,
+		.name = "manu-temp",
 		.input_conversion = payload_to_fht_temp,
 	},
 };
