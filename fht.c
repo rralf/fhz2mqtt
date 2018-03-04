@@ -12,6 +12,7 @@
 
 #include <ctype.h>
 #include <errno.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/select.h>
@@ -22,19 +23,39 @@
 
 #define ARRAY_SIZE(a) sizeof(a) / sizeof(a[0])
 
-#if 0
-const static struct payload payload_hello = {
-	.tt = 0xc9,
-	.len = 4,
-	.data = {0x02, 0x01, 0x1f, 0x60},
+#define FHT_DESIRED_TEMP 0x41
+#define FHT_MANU_TEMP 0x45
+
+static int payload_to_fht_temp(const char *payload)
+{
+	float temp;
+
+	if (sscanf(payload, "%f", &temp) != 1)
+		return -EINVAL;
+
+	/* TBd: Range checks! */
+
+	return (unsigned char)(temp/0.5);
+}
+
+struct fht_command {
+	unsigned char function_id;
+	const char *name;
+	int (*input_conversion)(const char *payload);
 };
 
-const static struct payload payload_status_serial = {
-	.tt = 0x04,
-	.len = 6,
-	.data = {0xc9, 0x01, 0x84, 0x57, 0x02, 0x08},
+#define for_each_fht_command(commands, command, counter) \
+	for((counter) = 0, (command) = (commands); \
+	    (counter) < ARRAY_SIZE((commands)); \
+	    (counter)++, (command)++)
+
+const static struct fht_command fht_commands[] = {
+	{
+		.function_id = FHT_DESIRED_TEMP,
+		.name = "desired-temp",
+		.input_conversion = payload_to_fht_temp,
+	},
 };
-#endif
 
 struct fht_handler {
 	unsigned char magic[4];
@@ -42,6 +63,11 @@ struct fht_handler {
 	int (*handler)(struct fht_decoded *decoded,
 		       const unsigned char *payload, ssize_t length);
 };
+
+#define for_each_handler(handlers, handler, counter) \
+	for((counter) = 0, handler = (handlers); \
+	    (counter) < ARRAY_SIZE((handlers)); \
+	    (handler)++, (counter)++)
 
 const static int fht_handle_status(struct fht_decoded *decoded,
 				   const unsigned char *payload, ssize_t length)
@@ -83,11 +109,6 @@ const static struct fht_handler fht_handlers[] = {
 	},
 };
 
-#define for_each_handler(handlers, handler, counter) \
-	for((counter) = 0, handler = (handlers); \
-	    (counter) < ARRAY_SIZE((handlers)); \
-	    (handler)++, (counter)++)
-
 int fht_decode(const struct payload *payload, struct fht_decoded *decoded)
 {
 	int i;
@@ -108,7 +129,7 @@ int fht_decode(const struct payload *payload, struct fht_decoded *decoded)
 	return -EINVAL;
 }
 
-int fht_send(int fd, struct hauscode *hauscode,
+static int fht_send(int fd, const struct hauscode *hauscode,
 		    unsigned char memory, unsigned char value)
 {
 	const struct payload payload = {
@@ -119,4 +140,30 @@ int fht_send(int fd, struct hauscode *hauscode,
 	};
 
 	return fhz_send(fd, &payload);
+}
+
+int fht_set(int fd, const struct hauscode *hauscode,
+	    const char *command, const char *payload)
+{
+	const struct fht_command *fht_command;
+	unsigned char fht_val;
+	bool found = false;
+	int i, err;
+
+	for_each_fht_command(fht_commands, fht_command, i)
+		if (!strcmp(fht_command->name, command)) {
+			found = true;
+			break;
+		}
+
+	if (!found)
+		return -EINVAL;
+
+	err = fht_command->input_conversion(payload);
+	if (err < 0)
+		return err;
+
+	fht_val = err;
+
+	return fht_send(fd, hauscode, fht_command->function_id, fht_val);
 }

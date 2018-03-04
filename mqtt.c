@@ -31,13 +31,49 @@ static int mqtt_subscribe(struct mosquitto *mosquitto)
 	return mosquitto_subscribe(mosquitto, NULL, TOPIC_SUBSCRIBE "#", 0);
 }
 
-static void callback(struct mosquitto *mosquitto, void *foo,
+static int mqtt_receive_fht(int fd, const char *topic, const char *payload)
+{
+	struct hauscode hauscode;
+	char buffer[5];
+
+	if (strlen(topic) < 6)
+		return -EINVAL;
+
+	memcpy(buffer, topic, 4);
+	buffer[4] = 0;
+	if (hauscode_from_string(buffer, &hauscode))
+		return -EINVAL;
+
+	if (topic[4] != '/')
+		return -EINVAL;
+
+	topic += 5;
+
+	return fht_set(fd, &hauscode, topic, payload);
+}
+
+static void callback(struct mosquitto *mosquitto, void *v_fd,
 		     const struct mosquitto_message *message)
 {
 	const char *topic = message->topic + sizeof(TOPIC_SUBSCRIBE) - 1;
+	char buffer[128];
+	const int fd = (int)(size_t)v_fd;
+	int err;
+
+	if (message->payloadlen > 127)
+		return;
+
+	memcpy(buffer, message->payload, message->payloadlen);
+	buffer[message->payloadlen] = 0;
 
 	if (!strncmp(topic, S_FHT, sizeof(S_FHT) - 1)) {
+		err = mqtt_receive_fht(fd, topic + sizeof(S_FHT) - 1, buffer);
+	} else {
+		err = -EINVAL;
 	}
+
+	if (err)
+		printf("Unable to parse request: %s\n", strerror(-err));
 }
 
 static int mqtt_publish_fht(struct mosquitto *mosquitto, const struct fht_decoded *decoded)

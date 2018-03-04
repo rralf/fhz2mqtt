@@ -62,5 +62,5 @@ static inline int hauscode_from_string(const char *string,
 }
 
 int fht_decode(const struct payload *payload, struct fht_decoded *decoded);
-int fht_send(int fd, struct hauscode *hauscode,
-	     unsigned char fht_cmd, unsigned char fht_val);
+int fht_set(int fd, const struct hauscode *hauscode,
+	    const char *command, const char *payload);
