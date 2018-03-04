@@ -61,11 +61,9 @@ const static int fht_handle_ack(struct fht_decoded *decoded,
 	if (length != 3)
 		return -EINVAL;
 
-	if (payload[0] != 0x3e)
-		return -EINVAL;
-
-	decoded->ack.location = payload[2];
+	decoded->ack.unknown = payload[0];
 	decoded->ack.byte = payload[1];
+	decoded->ack.location = payload[2];
 
 	return 0;
 }
@@ -110,13 +108,14 @@ int fht_decode(const struct payload *payload, struct fht_decoded *decoded)
 	return -EINVAL;
 }
 
-int fht80b_set_temp(int fd, struct hauscode *hauscode, float temp)
+int fht_send(int fd, struct hauscode *hauscode,
+		    unsigned char memory, unsigned char value)
 {
-	int x = (int)(temp / 0.5);
 	const struct payload payload = {
 		.tt = 0x04,
 		.len = 7,
-		.data = {0x02, 0x01, 0x83, hauscode->upper, hauscode->lower, 0x41, x},
+		.data = {0x02, 0x01, 0x83, hauscode->upper, hauscode->lower,
+			 memory, value},
 	};
 
 	return fhz_send(fd, &payload);

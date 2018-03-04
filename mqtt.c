@@ -60,8 +60,8 @@ static int mqtt_publish_fht(struct mosquitto *mosquitto, const struct fht_decode
 			 TOPIC_FHT "%02u%02u/ack/%02x",
 			 decoded->hauscode.upper, decoded->hauscode.lower,
 			 decoded->ack.location);
-		len = snprintf(message, sizeof(message), "%02x",
-			       decoded->ack.byte);
+		len = snprintf(message, sizeof(message), "%02x Unknown: %02x",
+			       decoded->ack.byte, decoded->ack.unknown);
 		break;
 	default:
 		return -EINVAL;

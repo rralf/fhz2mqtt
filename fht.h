@@ -28,6 +28,7 @@ struct fht_decoded {
 	struct hauscode hauscode;
 	union {
 		struct {
+			unsigned char unknown;
 			unsigned char location;
 			unsigned char byte;
 		} ack;
@@ -61,4 +62,5 @@ static inline int hauscode_from_string(const char *string,
 }
 
 int fht_decode(const struct payload *payload, struct fht_decoded *decoded);
-int fht80b_set_temp(int fd, struct hauscode *hauscode, float temp);
+int fht_send(int fd, struct hauscode *hauscode,
+	     unsigned char fht_cmd, unsigned char fht_val);
