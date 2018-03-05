@@ -125,7 +125,7 @@ static int fht_is_temp_high_to_str(char *dst, int len, unsigned char value)
 
 static int fht_percentage_to_str(char *dst, int len, unsigned char value)
 {
-	snprintf(dst, len, "%u%%", value);
+	snprintf(dst, len, "%0.1f", (float)value * 100 / 255);
 	return 0;
 }
 
