@@ -66,7 +66,8 @@ temp_out:
 	return (unsigned char)(temp/0.5);
 }
 
-static int fht_temp_to_str(char *dst, int len, unsigned char temp)
+static int fht_temp_to_str(char *dst, int len,
+			   unsigned char stat, unsigned char temp)
 {
 	snprintf(dst, len, "%0.1f", (float)temp * 0.5);
 	return 0;
@@ -84,7 +85,8 @@ static int payload_to_mode(const char *payload)
 	return -EINVAL;
 }
 
-static int mode_to_str(char *dst, int len, unsigned char mode)
+static int mode_to_str(char *dst, int len, unsigned char stat,
+		       unsigned char mode)
 {
 	switch (mode) {
 	case FHT_MODE_AUTO:
@@ -110,20 +112,23 @@ static int input_not_accepted(const char *payload)
 	return -EPERM;
 }
 
-static int fht_is_temp_low(char *dst, int len, unsigned char value)
+static int fht_is_temp_low(char *dst, int len,
+			   unsigned char stat, unsigned char value)
 {
 	temp_low = value;
 	return -EAGAIN;
 }
 
-static int fht_is_temp_high_to_str(char *dst, int len, unsigned char value)
+static int fht_is_temp_high_to_str(char *dst, int len,
+				   unsigned char stat, unsigned char value)
 {
 	snprintf(dst, len, "%0.2f",
 		 ((float)temp_low + (float)value * 256)/10.0);
 	return 0;
 }
 
-static int fht_percentage_to_str(char *dst, int len, unsigned char value)
+static int fht_percentage_to_str(char *dst, int len,
+				 unsigned char stat, unsigned char value)
 {
 	snprintf(dst, len, "%0.1f", (float)value * 100 / 255);
 	return 0;
@@ -133,7 +138,8 @@ struct fht_command {
 	unsigned char function_id;
 	const char *name;
 	int (*input_conversion)(const char *payload);
-	int (*output_conversion)(char *dst, int len, unsigned char value);
+	int (*output_conversion)(char *dst, int len,
+				 unsigned char stat, unsigned char value);
 };
 
 #define for_each_fht_command(commands, command, counter) \
@@ -202,7 +208,7 @@ int fht_decode(const struct payload *payload, struct fht_decoded *decoded)
 	const static unsigned char magic_ack[] = {0x83, 0x09, 0x83, 0x01};
 	const static unsigned char magic_status[] = {0x09, 0x09, 0xa0, 0x01};
 	const struct fht_command *fht_command;
-	unsigned char cmd, val;
+	unsigned char cmd, stat, val;
 	int i;
 
 	if (payload->len < 9)
@@ -212,11 +218,13 @@ int fht_decode(const struct payload *payload, struct fht_decoded *decoded)
 		decoded->type = ACK;
 		cmd = payload->data[6];
 		val = payload->data[7];
+		stat = 0;
 	} else if (!memcmp(payload->data, magic_status, sizeof(magic_status))) {
 		if (payload->len != 10)
 			return -EINVAL;
 		decoded->type = STATUS;
 		cmd = payload->data[6];
+		stat = payload->data[8];
 		val = payload->data[9];
 	} else
 		return -EINVAL;
@@ -240,7 +248,7 @@ int fht_decode(const struct payload *payload, struct fht_decoded *decoded)
 		decoded->topic1 = fht_command->name;
 		return fht_command->output_conversion(decoded->value1,
 					              sizeof(decoded->value1),
-						      val);
+						      stat, val);
 	}
 
 	return -EINVAL;
