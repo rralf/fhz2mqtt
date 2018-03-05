@@ -33,6 +33,9 @@
 #define FHT_IS_TEMP_HIGH 0x43
 #define FHT_STATUS 0x44 /* exceptional case! */
 #define FHT_MANU_TEMP 0x45
+#define FHT_DAY_TEMP 0x82
+#define FHT_NIGHT_TEMP 0x84
+#define FHT_WINDOW_OPEN_TEMP 0x8a
 
 const static char s_mode_auto[] = "auto";
 const static char s_mode_holiday[] = "holiday";
@@ -160,6 +163,24 @@ const static struct fht_command fht_commands[] = {
 	/* manu temp */ {
 		.function_id = FHT_MANU_TEMP,
 		.name = "manu-temp",
+		.input_conversion = payload_to_fht_temp,
+		.output_conversion = fht_temp_to_str,
+	},
+	/* day temp */ {
+		.function_id = FHT_DAY_TEMP,
+		.name = "day-temp",
+		.input_conversion = payload_to_fht_temp,
+		.output_conversion = fht_temp_to_str,
+	},
+	/* night temp */ {
+		.function_id = FHT_NIGHT_TEMP,
+		.name = "night-temp",
+		.input_conversion = payload_to_fht_temp,
+		.output_conversion = fht_temp_to_str,
+	},
+	/* window open temp */ {
+		.function_id = FHT_WINDOW_OPEN_TEMP,
+		.name = "window-open-temp",
 		.input_conversion = payload_to_fht_temp,
 		.output_conversion = fht_temp_to_str,
 	},
