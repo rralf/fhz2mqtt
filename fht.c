@@ -23,6 +23,9 @@
 
 #define ARRAY_SIZE(a) sizeof(a) / sizeof(a[0])
 
+#define FHT_TEMP_OFF 5.5
+#define FHT_TEMP_ON 30.5
+
 #define FHT_IS_VALVE 0x00
 #define FHT_MODE 0x3e
 #define  FHT_MODE_AUTO 0
@@ -47,11 +50,19 @@ static int payload_to_fht_temp(const char *payload)
 {
 	float temp;
 
-	if (sscanf(payload, "%f", &temp) != 1)
+	if (!strcasecmp(payload, "off")) {
+		temp = FHT_TEMP_OFF;
+		goto temp_out;
+	} else if (!strcasecmp(payload, "on")) {
+		temp = FHT_TEMP_ON;
+		goto temp_out;
+	} else if (sscanf(payload, "%f", &temp) != 1)
 		return -EINVAL;
 
-	/* TBd: Range checks! */
+	if (temp < FHT_TEMP_OFF || temp > FHT_TEMP_ON)
+		return -ERANGE;
 
+temp_out:
 	return (unsigned char)(temp/0.5);
 }
 
