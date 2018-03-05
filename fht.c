@@ -257,7 +257,7 @@ int fht_set(int fd, const struct hauscode *hauscode,
 	int i, err;
 
 	for_each_fht_command(fht_commands, fht_command, i)
-		if (!strcmp(fht_command->name, command)) {
+		if (fht_command->name && !strcmp(fht_command->name, command)) {
 			found = true;
 			break;
 		}
