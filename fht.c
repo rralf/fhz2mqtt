@@ -256,8 +256,8 @@ int fht_decode(const struct payload *payload, struct fht_message *message)
 {
 	const static unsigned char magic_ack[] = {0x83, 0x09, 0x83, 0x01};
 	const static unsigned char magic_status[] = {0x09, 0x09, 0xa0, 0x01};
-	const struct fht_command *fht_command;
 	struct fht_message_raw fht_message_raw = {0, 0, 0};
+	const struct fht_command *fht_command;
 	unsigned char cmd;
 	int i;
 

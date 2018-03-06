@@ -95,7 +95,8 @@ static void publish(struct mosquitto *mosquitto, const char *type,
 
 }
 
-static int mqtt_publish_fht(struct mosquitto *mosquitto, const struct fht_message *message)
+static int mqtt_publish_fht(struct mosquitto *mosquitto,
+			    const struct fht_message *message)
 {
 	const char *type;
 
