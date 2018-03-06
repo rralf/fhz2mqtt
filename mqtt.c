@@ -86,7 +86,7 @@ static void publish(struct mosquitto *mosquitto, const char *type,
 		 hauscode->upper, hauscode->lower, type, topic);
 
 #ifdef DEBUG
-	printf("%s: %s\n", topic, value);
+	printf("%s %s\n", mqtt_topic, value);
 #endif
 #ifndef NO_SEND
 	mosquitto_publish(mosquitto, NULL, mqtt_topic, strlen(value), value, 0,
