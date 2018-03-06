@@ -25,6 +25,14 @@
 #define FHT_TEMP_ON 30.5
 
 #define FHT_IS_VALVE 0x00
+#define FHT_VALVE_1 0x01
+#define FHT_VALVE_2 0x02
+#define FHT_VALVE_3 0x03
+#define FHT_VALVE_4 0x04
+#define FHT_VALVE_5 0x05
+#define FHT_VALVE_6 0x06
+#define FHT_VALVE_7 0x07
+#define FHT_VALVE_8 0x08
 #define FHT_MODE 0x3e
 #define  FHT_MODE_AUTO 0
 #define  FHT_MODE_MANU 1
@@ -220,6 +228,17 @@ static int fht_status_to_str(struct fht_message *message,
 	return 0;
 }
 
+#define __stringify(a) __str(a)
+#define __str(a) #a
+
+#define DEFINE_VALVE(__no) \
+	{ \
+		.function_id = FHT_VALVE_##__no, \
+		.name = "valve/" __stringify(__no), \
+		.input_conversion = input_not_accepted, \
+		.output_conversion = fht_percentage_to_str, \
+	}
+
 const static struct fht_command fht_commands[] = {
 	/* is valve */ {
 		.function_id = FHT_IS_VALVE,
@@ -227,6 +246,14 @@ const static struct fht_command fht_commands[] = {
 		.input_conversion = input_not_accepted,
 		.output_conversion = fht_percentage_to_str,
 	},
+	DEFINE_VALVE(1),
+	DEFINE_VALVE(2),
+	DEFINE_VALVE(3),
+	DEFINE_VALVE(4),
+	DEFINE_VALVE(5),
+	DEFINE_VALVE(6),
+	DEFINE_VALVE(7),
+	DEFINE_VALVE(8),
 	/* mode */ {
 		.function_id = FHT_MODE,
 		.name = "mode",
