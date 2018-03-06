@@ -40,12 +40,18 @@
 #define FHT_NIGHT_TEMP 0x84
 #define FHT_WINDOW_OPEN_TEMP 0x8a
 
+struct fht_message {
+	unsigned char subfun;
+	unsigned char status;
+	unsigned char value;
+};
+
 struct fht_command {
 	unsigned char function_id;
 	const char *name;
 	int (*input_conversion)(const char *payload);
 	int (*output_conversion)(char *dst, int len,
-				 unsigned char stat, unsigned char value);
+				 const struct fht_message *message);
 };
 
 #define for_each_fht_command(commands, command, counter) \
@@ -79,10 +85,9 @@ temp_out:
 	return (unsigned char)(temp/0.5);
 }
 
-static int fht_temp_to_str(char *dst, int len,
-			   unsigned char stat, unsigned char temp)
+static int fht_temp_to_str(char *dst, int len, const struct fht_message *message)
 {
-	snprintf(dst, len, "%0.1f", (float)temp * 0.5);
+	snprintf(dst, len, "%0.1f", (float)message->value * 0.5);
 	return 0;
 }
 
@@ -98,10 +103,9 @@ static int payload_to_mode(const char *payload)
 	return -EINVAL;
 }
 
-static int mode_to_str(char *dst, int len, unsigned char stat,
-		       unsigned char mode)
+static int mode_to_str(char *dst, int len, const struct fht_message *message)
 {
-	switch (mode) {
+	switch (message->value) {
 	case FHT_MODE_AUTO:
 		strncpy(dst, s_mode_auto, len);
 		break;
@@ -125,28 +129,28 @@ static int input_not_accepted(const char *payload)
 	return -EPERM;
 }
 
-static int fht_is_temp_low(char *dst, int len,
-			   unsigned char stat, unsigned char value)
+static int fht_is_temp_low(char *dst, int len, const struct fht_message *message)
 {
-	temp_low = value;
+	temp_low = message->value;
 	return -EAGAIN;
 }
 
 static int fht_is_temp_high_to_str(char *dst, int len,
-				   unsigned char stat, unsigned char value)
+				   const struct fht_message *message)
 {
 	snprintf(dst, len, "%0.2f",
-		 ((float)temp_low + (float)value * 256)/10.0);
+		 ((float)temp_low + (float)message->value* 256)/10.0);
 	return 0;
 }
 
 static int fht_percentage_to_str(char *dst, int len,
-				 unsigned char stat, unsigned char value)
+				 const struct fht_message *message)
 {
 	unsigned char l, r;
+	unsigned char valve = message->value;
 
-	l = (stat >> 4) & 0x0f;
-	r = stat & 0x0f;
+	l = (message->status >> 4) & 0x0f;
+	r = message->status & 0x0f;
 
 	/* actuator changed state. e.g., the valve */
 	if (l == 0x2) {
@@ -156,10 +160,10 @@ static int fht_percentage_to_str(char *dst, int len,
 
 	switch (r) {
 	case 0x1: /* 30.5 or ON on fht80b */
-		value = 0xff;
+		valve = 0xff;
 		break;
 	case 0x2: /* 5.5 or OFF on fht80b */
-		value = 0;
+		valve = 0;
 		break;
 	case 0x0: /* value contains valve state */
 	case 0x6:
@@ -184,7 +188,7 @@ static int fht_percentage_to_str(char *dst, int len,
 		break;
 	}
 
-	snprintf(dst, len, "%0.1f", ((float)value * 100 / 255) + 0.5);
+	snprintf(dst, len, "%0.1f", (float)valve * 100 / 255);
 
 	return 0;
 }
@@ -250,7 +254,8 @@ int fht_decode(const struct payload *payload, struct fht_decoded *decoded)
 	const static unsigned char magic_ack[] = {0x83, 0x09, 0x83, 0x01};
 	const static unsigned char magic_status[] = {0x09, 0x09, 0xa0, 0x01};
 	const struct fht_command *fht_command;
-	unsigned char cmd, stat, val;
+	struct fht_message fht_message;
+	unsigned char cmd;
 	int i;
 
 	if (payload->len < 9)
@@ -259,15 +264,17 @@ int fht_decode(const struct payload *payload, struct fht_decoded *decoded)
 	if (!memcmp(payload->data, magic_ack, sizeof(magic_ack))) {
 		decoded->type = ACK;
 		cmd = payload->data[6];
-		val = payload->data[7];
-		stat = 0;
+		fht_message.subfun = 0;
+		fht_message.status = 0;
+		fht_message.value = payload->data[7];
 	} else if (!memcmp(payload->data, magic_status, sizeof(magic_status))) {
 		if (payload->len != 10)
 			return -EINVAL;
 		decoded->type = STATUS;
 		cmd = payload->data[6];
-		stat = payload->data[8];
-		val = payload->data[9];
+		fht_message.subfun = payload->data[7];
+		fht_message.status = payload->data[8];
+		fht_message.value = payload->data[9];
 	} else
 		return -EINVAL;
 
@@ -277,10 +284,10 @@ int fht_decode(const struct payload *payload, struct fht_decoded *decoded)
 	if (cmd == FHT_STATUS) {
 		decoded->topic1 = "window";
 		snprintf(decoded->value1, sizeof(decoded->value1), "%s",
-			 val & (1 << 5) ? "open" : "close");
+			 fht_message.value & (1 << 5) ? "open" : "close");
 		decoded->topic2 = "battery";
 		snprintf(decoded->value2, sizeof(decoded->value2), "%s",
-			 val & (1 << 0) ? "empty" : "ok");
+			 fht_message.value & (1 << 0) ? "empty" : "ok");
 		return 0;
 	}
 
@@ -290,7 +297,7 @@ int fht_decode(const struct payload *payload, struct fht_decoded *decoded)
 		decoded->topic1 = fht_command->name;
 		return fht_command->output_conversion(decoded->value1,
 					              sizeof(decoded->value1),
-						      stat, val);
+						      &fht_message);
 	}
 
 	return -EINVAL;
