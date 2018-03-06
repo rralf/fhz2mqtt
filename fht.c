@@ -56,6 +56,7 @@
 		 __VA_ARGS__)
 
 struct fht_message_raw {
+	unsigned char cmd;
 	unsigned char subfun;
 	unsigned char status;
 	unsigned char value;
@@ -313,9 +314,8 @@ int fht_decode(const struct payload *payload, struct fht_message *message)
 {
 	const static unsigned char magic_ack[] = {0x83, 0x09, 0x83, 0x01};
 	const static unsigned char magic_status[] = {0x09, 0x09, 0xa0, 0x01};
-	struct fht_message_raw fht_message_raw = {0, 0, 0};
+	struct fht_message_raw fht_message_raw = {0, 0, 0, 0};
 	const struct fht_command *fht_command;
-	unsigned char cmd;
 	int i;
 
 	memset(message, 0, sizeof(*message));
@@ -325,23 +325,22 @@ int fht_decode(const struct payload *payload, struct fht_message *message)
 
 	if (!memcmp(payload->data, magic_ack, sizeof(magic_ack))) {
 		message->type = ACK;
-		cmd = payload->data[6];
 		fht_message_raw.value = payload->data[7];
 	} else if (!memcmp(payload->data, magic_status, sizeof(magic_status))) {
 		if (payload->len != 10)
 			return -EINVAL;
 		message->type = STATUS;
-		cmd = payload->data[6];
 		fht_message_raw.subfun = payload->data[7];
 		fht_message_raw.status = payload->data[8];
 		fht_message_raw.value = payload->data[9];
 	} else
 		return -EINVAL;
+	fht_message_raw.cmd = payload->data[6];
 
 	message->hauscode = *(const struct hauscode*)(payload->data + 4);
 
 	for_each_fht_command(fht_commands, fht_command, i) {
-		if (fht_command->function_id != cmd)
+		if (fht_command->function_id != fht_message_raw.cmd)
 			continue;
 		if (fht_command->name)
 			strncpy(message->report[0].topic, fht_command->name,
