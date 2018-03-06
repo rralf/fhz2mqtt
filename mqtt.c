@@ -76,9 +76,9 @@ static void callback(struct mosquitto *mosquitto, void *v_fd,
 		printf("Unable to parse request: %s\n", strerror(-err));
 }
 
-static void publish(struct mosquitto *mosquitto, const char *type,
-		    const struct hauscode *hauscode, const char *topic,
-		    const char *value)
+static inline void publish(struct mosquitto *mosquitto, const char *type,
+		           const struct hauscode *hauscode, const char *topic,
+		           const char *value)
 {
 	char mqtt_topic[64];
 
@@ -99,14 +99,16 @@ static int mqtt_publish_fht(struct mosquitto *mosquitto,
 			    const struct fht_message *message)
 {
 	const char *type;
+	int i;
 
 	type = message->type == ACK ? "ack" : "status";
 
-	publish(mosquitto, type, &message->hauscode,
-		message->topic1, message->value1);
-	if (strlen(message->topic2))
+	for (i = 0; i < ARRAY_SIZE(message->report); i++) {
+		if (!message->report[i].topic[0])
+			continue;
 		publish(mosquitto, type, &message->hauscode,
-			message->topic2, message->value2);
+			message->report[i].topic, message->report[i].value);
+	}
 
 	return 0;
 }

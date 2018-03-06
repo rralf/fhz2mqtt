@@ -24,10 +24,10 @@ struct hauscode {
 struct fht_message {
 	enum {STATUS, ACK} type;
 	struct hauscode hauscode;
-	char topic1[16];
-	char topic2[16];
-	char value1[16];
-	char value2[16];
+	struct {
+		char topic[16];
+		char value[16];
+	} report[2];
 };
 
 static inline int hauscode_from_string(const char *string,

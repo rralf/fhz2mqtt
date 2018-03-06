@@ -32,11 +32,20 @@
 #define FHT_DESIRED_TEMP 0x41
 #define FHT_IS_TEMP_LOW 0x42
 #define FHT_IS_TEMP_HIGH 0x43
-#define FHT_STATUS 0x44 /* exceptional case! */
+#define FHT_STATUS 0x44
 #define FHT_MANU_TEMP 0x45
 #define FHT_DAY_TEMP 0x82
 #define FHT_NIGHT_TEMP 0x84
 #define FHT_WINDOW_OPEN_TEMP 0x8a
+
+#define report_set_topic(__message, __no, __string) \
+	strncpy(__message->report[__no].topic, \
+	 __string, sizeof(__message->report[__no].topic))
+
+#define report_printf_value(__message, __no, ...) \
+	snprintf(__message->report[__no].value, \
+		 sizeof(__message->report[__no].value), \
+		 __VA_ARGS__)
 
 struct fht_message_raw {
 	unsigned char subfun;
@@ -48,7 +57,7 @@ struct fht_command {
 	unsigned char function_id;
 	const char *name;
 	int (*input_conversion)(const char *payload);
-	int (*output_conversion)(char *dst, int len,
+	int (*output_conversion)(struct fht_message *message,
 				 const struct fht_message_raw *raw);
 };
 
@@ -83,10 +92,10 @@ temp_out:
 	return (unsigned char)(temp/0.5);
 }
 
-static int fht_temp_to_str(char *dst, int len,
+static int fht_temp_to_str(struct fht_message *message,
 			   const struct fht_message_raw *raw)
 {
-	snprintf(dst, len, "%0.1f", (float)raw->value * 0.5);
+	report_printf_value(message, 0, "%0.1f", (float)raw->value * 0.5);
 	return 0;
 }
 
@@ -102,26 +111,31 @@ static int payload_to_mode(const char *payload)
 	return -EINVAL;
 }
 
-static int mode_to_str(char *dst, int len,
+static int mode_to_str(struct fht_message *message,
 		       const struct fht_message_raw *raw)
 {
+	const char *src;
+	int err = 0;
+
 	switch (raw->value) {
 	case FHT_MODE_AUTO:
-		strncpy(dst, s_mode_auto, len);
+		src = s_mode_auto;
 		break;
 	case FHT_MODE_MANU:
-		strncpy(dst, s_mode_manual, len);
+		src = s_mode_manual;
 		break;
 	case FHT_MODE_HOLI:
-		strncpy(dst, s_mode_holiday, len);
+		src = s_mode_holiday;
 		break;
 	default:
-		strncpy(dst, "unknown", len);
-		return -EINVAL;
+		src = "unknown";
+		err = -EINVAL;
 		break;
 	}
 
-	return 0;
+	report_printf_value(message, 0, src);
+
+	return err;
 }
 
 static int input_not_accepted(const char *payload)
@@ -129,22 +143,22 @@ static int input_not_accepted(const char *payload)
 	return -EPERM;
 }
 
-static int fht_is_temp_low(char *dst, int len,
+static int fht_is_temp_low(struct fht_message *message,
 			   const struct fht_message_raw *raw)
 {
 	temp_low = raw->value;
 	return -EAGAIN;
 }
 
-static int fht_is_temp_high_to_str(char *dst, int len,
+static int fht_is_temp_high_to_str(struct fht_message *message,
 				   const struct fht_message_raw *raw)
 {
-	snprintf(dst, len, "%0.2f",
-		 ((float)temp_low + (float)raw->value* 256)/10.0);
+	report_printf_value(message, 0, "%0.2f",
+			    ((float)temp_low + (float)raw->value* 256)/10.0);
 	return 0;
 }
 
-static int fht_percentage_to_str(char *dst, int len,
+static int fht_percentage_to_str(struct fht_message *message,
 				 const struct fht_message_raw *raw)
 {
 	unsigned char l, r;
@@ -189,8 +203,20 @@ static int fht_percentage_to_str(char *dst, int len,
 		break;
 	}
 
-	snprintf(dst, len, "%0.1f", (float)valve * 100 / 255);
+	report_printf_value(message, 0, "%0.1f", (float)valve * 100 / 255);
+	return 0;
+}
 
+static int fht_status_to_str(struct fht_message *message,
+			     const struct fht_message_raw *raw)
+{
+	report_set_topic(message, 0, "window");
+	report_printf_value(message, 0, "%s",
+			    raw->value & (1 << 5) ? "open" : "close");
+
+	report_set_topic(message, 1, "battery");
+	report_printf_value(message, 1, "%s",
+			    raw->value & (1 << 0) ? "empty" : "ok");
 	return 0;
 }
 
@@ -223,6 +249,12 @@ const static struct fht_command fht_commands[] = {
 		.name = "is-temp",
 		.input_conversion = input_not_accepted,
 		.output_conversion = fht_is_temp_high_to_str,
+	},
+	/* status */ {
+		.function_id = FHT_STATUS,
+		.name = "status",
+		.input_conversion = input_not_accepted,
+		.output_conversion = fht_status_to_str,
 	},
 	/* manu temp */ {
 		.function_id = FHT_MANU_TEMP,
@@ -259,6 +291,8 @@ int fht_decode(const struct payload *payload, struct fht_message *message)
 	unsigned char cmd;
 	int i;
 
+	memset(message, 0, sizeof(*message));
+
 	if (payload->len < 9)
 		return -EINVAL;
 
@@ -278,26 +312,14 @@ int fht_decode(const struct payload *payload, struct fht_message *message)
 		return -EINVAL;
 
 	message->hauscode = *(const struct hauscode*)(payload->data + 4);
-	message->topic2[0] = 0;
-
-	if (cmd == FHT_STATUS) {
-		strncpy(message->topic1, "window", sizeof(message->topic1));
-		snprintf(message->value1, sizeof(message->value1), "%s",
-			 fht_message_raw.value & (1 << 5) ? "open" : "close");
-		strncpy(message->topic2, "battery", sizeof(message->topic2));
-		snprintf(message->value2, sizeof(message->value2), "%s",
-			 fht_message_raw.value & (1 << 0) ? "empty" : "ok");
-		return 0;
-	}
 
 	for_each_fht_command(fht_commands, fht_command, i) {
 		if (fht_command->function_id != cmd)
 			continue;
 		if (fht_command->name)
-			strncpy(message->topic1, fht_command->name,
-				sizeof(message->topic1));
-		return fht_command->output_conversion(message->value1,
-					              sizeof(message->value1),
+			strncpy(message->report[0].topic, fht_command->name,
+				sizeof(message->report[0].topic));
+		return fht_command->output_conversion(message,
 						      &fht_message_raw);
 	}
 
