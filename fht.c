@@ -46,14 +46,16 @@
 #define FHT_NIGHT_TEMP 0x84
 #define FHT_WINDOW_OPEN_TEMP 0x8a
 
-#define report_set_topic(__message, __no, __string) \
-	strncpy(__message->report[__no].topic, \
-	 __string, sizeof(__message->report[__no].topic))
+#define __report_printf(__message, __no, __field, ...) \
+	snprintf(__message->report[__no].__field, \
+		 sizeof(__message->report[__no].__field), \
+		 __VA_ARGS__)
+
+#define report_printf_topic(__message, __no, ...) \
+	__report_printf(__message, __no, topic, __VA_ARGS__)
 
 #define report_printf_value(__message, __no, ...) \
-	snprintf(__message->report[__no].value, \
-		 sizeof(__message->report[__no].value), \
-		 __VA_ARGS__)
+	__report_printf(__message, __no, value, __VA_ARGS__)
 
 struct fht_message_raw {
 	unsigned char cmd;
@@ -208,7 +210,8 @@ static int fht_percentage_to_str(struct fht_message *message,
 		return -EINVAL;
 		break;
 	case 0xf: /* pair */
-		return -EINVAL;
+		report_printf_topic(message, 1, "valve/%u", raw->cmd);
+		report_printf_value(message, 1, "paired");
 		break;
 	}
 
@@ -219,11 +222,11 @@ static int fht_percentage_to_str(struct fht_message *message,
 static int fht_status_to_str(struct fht_message *message,
 			     const struct fht_message_raw *raw)
 {
-	report_set_topic(message, 0, "window");
+	report_printf_topic(message, 0, "window");
 	report_printf_value(message, 0, "%s",
 			    raw->value & (1 << 5) ? "open" : "close");
 
-	report_set_topic(message, 1, "battery");
+	report_printf_topic(message, 1, "battery");
 	report_printf_value(message, 1, "%s",
 			    raw->value & (1 << 0) ? "empty" : "ok");
 	return 0;
