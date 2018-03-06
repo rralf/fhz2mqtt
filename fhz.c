@@ -84,7 +84,8 @@ static int fhz_receive(int fd, struct payload *payload)
 			error("Read from serial fail: %s\n", strerror(errno));
 			return -errno;
 		} else {
-			error("Packet shorter expected: got %zd, expected %u\n", length, buffer[1]);
+			error("Packet shorter expected: got %zd, expected %u\n",
+			      length, buffer[1]);
 			return -EINVAL;
 		}
 	}
