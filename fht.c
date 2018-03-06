@@ -130,10 +130,49 @@ static int fht_is_temp_high_to_str(char *dst, int len,
 static int fht_percentage_to_str(char *dst, int len,
 				 unsigned char stat, unsigned char value)
 {
-	if (stat == 0xa1 && value == 0x00)
-		value = 0xff;
+	unsigned char l, r;
 
-	snprintf(dst, len, "%0.1f", (float)value * 100 / 255);
+	l = (stat >> 4) & 0x0f;
+	r = stat & 0x0f;
+
+	/* actuator changed state. e.g., the valve */
+	if (l == 0x2) {
+	 /* actuator didn't change */
+	} else if (l == 0xa) {
+	}
+
+	switch (r) {
+	case 0x1: /* 30.5 or ON on fht80b */
+		value = 0xff;
+		break;
+	case 0x2: /* 5.5 or OFF on fht80b */
+		value = 0;
+		break;
+	case 0x0: /* value contains valve state */
+	case 0x6:
+		break;
+	case 0x8: /* value contains OFFSET setting */
+		return -EINVAL;
+		/* TBD: implement offset transmission */
+		break;
+	case 0xa: /* lime-protection */
+		/* lime-protection bug, value contains valve setting */
+		if (l == 0xa || l == 0xb)
+			break;
+		/* else l == 0x2 or l == 0x3 */
+		return -EINVAL;
+		/* TBD: submit lime-protection */
+		break;
+	case 0xe: /* TEST */
+		return -EINVAL;
+		break;
+	case 0xf: /* pair */
+		return -EINVAL;
+		break;
+	}
+
+	snprintf(dst, len, "%0.1f", ((float)value * 100 / 255) + 0.5);
+
 	return 0;
 }
 
