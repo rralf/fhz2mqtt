@@ -69,7 +69,8 @@ int main(int argc, const char **argv)
 		else if (!err) {
 			err = mqtt_publish(mosquitto, &message);
 			if (err)
-				fprintf(stderr, "Unable to publish FHZ message to mqtt\n");
+				fprintf(stderr, "mqtt: unable to publish FHZ "
+						"message\n");
 		}
 
 		err = mqtt_handle(mosquitto);
