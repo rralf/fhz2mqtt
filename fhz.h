@@ -13,6 +13,8 @@
 #include "fht.h"
 
 #define ARRAY_SIZE(a) sizeof(a) / sizeof(a[0])
+#define __stringify(a) __str(a)
+#define __str(a) #a
 
 #define FHZ_MAGIC 0x81
 #define BAUDRATE B9600

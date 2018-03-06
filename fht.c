@@ -232,9 +232,6 @@ static int fht_status_to_str(struct fht_message *message,
 	return 0;
 }
 
-#define __stringify(a) __str(a)
-#define __str(a) #a
-
 #define DEFINE_VALVE(__no) \
 	{ \
 		.function_id = FHT_VALVE_##__no, \
