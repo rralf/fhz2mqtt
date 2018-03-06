@@ -26,8 +26,8 @@ struct fht_message {
 	struct hauscode hauscode;
 	char topic1[16];
 	char topic2[16];
-	char value1[32];
-	char value2[32];
+	char value1[16];
+	char value2[16];
 };
 
 static inline int hauscode_from_string(const char *string,
