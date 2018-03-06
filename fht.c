@@ -21,8 +21,6 @@
 
 #include "fhz.h"
 
-#define ARRAY_SIZE(a) sizeof(a) / sizeof(a[0])
-
 #define FHT_TEMP_OFF 5.5
 #define FHT_TEMP_ON 30.5
 

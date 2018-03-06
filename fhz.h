@@ -12,8 +12,9 @@
 
 #include "fht.h"
 
-#define FHZ_MAGIC 0x81
+#define ARRAY_SIZE(a) sizeof(a) / sizeof(a[0])
 
+#define FHZ_MAGIC 0x81
 #define BAUDRATE B9600
 
 #define error(...) \
