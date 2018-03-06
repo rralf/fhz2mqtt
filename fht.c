@@ -40,6 +40,19 @@
 #define FHT_NIGHT_TEMP 0x84
 #define FHT_WINDOW_OPEN_TEMP 0x8a
 
+struct fht_command {
+	unsigned char function_id;
+	const char *name;
+	int (*input_conversion)(const char *payload);
+	int (*output_conversion)(char *dst, int len,
+				 unsigned char stat, unsigned char value);
+};
+
+#define for_each_fht_command(commands, command, counter) \
+	for((counter) = 0, (command) = (commands); \
+	    (counter) < ARRAY_SIZE((commands)); \
+	    (counter)++, (command)++)
+
 const static char s_mode_auto[] = "auto";
 const static char s_mode_holiday[] = "holiday";
 const static char s_mode_manual[] = "manual";
@@ -175,19 +188,6 @@ static int fht_percentage_to_str(char *dst, int len,
 
 	return 0;
 }
-
-struct fht_command {
-	unsigned char function_id;
-	const char *name;
-	int (*input_conversion)(const char *payload);
-	int (*output_conversion)(char *dst, int len,
-				 unsigned char stat, unsigned char value);
-};
-
-#define for_each_fht_command(commands, command, counter) \
-	for((counter) = 0, (command) = (commands); \
-	    (counter) < ARRAY_SIZE((commands)); \
-	    (counter)++, (command)++)
 
 const static struct fht_command fht_commands[] = {
 	/* is valve */ {
