@@ -95,26 +95,26 @@ static void publish(struct mosquitto *mosquitto, const char *type,
 
 }
 
-static int mqtt_publish_fht(struct mosquitto *mosquitto, const struct fht_decoded *decoded)
+static int mqtt_publish_fht(struct mosquitto *mosquitto, const struct fht_message *message)
 {
 	const char *type;
 
-	type = decoded->type == ACK ? "ack" : "status";
+	type = message->type == ACK ? "ack" : "status";
 
-	publish(mosquitto, type, &decoded->hauscode,
-		decoded->topic1, decoded->value1);
-	if (decoded->topic2)
-		publish(mosquitto, type, &decoded->hauscode,
-			decoded->topic2, decoded->value2);
+	publish(mosquitto, type, &message->hauscode,
+		message->topic1, message->value1);
+	if (message->topic2)
+		publish(mosquitto, type, &message->hauscode,
+			message->topic2, message->value2);
 
 	return 0;
 }
 
-int mqtt_publish(struct mosquitto *mosquitto, const struct fhz_decoded *decoded)
+int mqtt_publish(struct mosquitto *mosquitto, const struct fhz_message *message)
 {
-	switch (decoded->machine) {
+	switch (message->machine) {
 	case FHT:
-		return mqtt_publish_fht(mosquitto, &decoded->fht);
+		return mqtt_publish_fht(mosquitto, &message->fht);
 	default:
 		return -EINVAL;
 	}

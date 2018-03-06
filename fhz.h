@@ -29,15 +29,15 @@ struct payload {
 	unsigned char data[256];
 };
 
-struct fhz_decoded {
+struct fhz_message {
 	enum {
 		FHT,
 	} machine;
 	union {
-		struct fht_decoded fht;
+		struct fht_message fht;
 	};
 };
 
 int fhz_open_serial(const char *device);
 int fhz_send(int fd, const struct payload *payload);
-int fhz_handle(int fd, struct fhz_decoded *decoded);
+int fhz_handle(int fd, struct fhz_message *message);

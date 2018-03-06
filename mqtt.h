@@ -10,7 +10,7 @@
  * the COPYING file in the top-level directory.
  */
 
-struct fhz_decoded;
+struct fhz_message;
 struct mosquitto;
 
 int mqtt_init(struct mosquitto **handle, int fd, const char *host, int port,
@@ -19,4 +19,4 @@ int mqtt_init(struct mosquitto **handle, int fd, const char *host, int port,
 void mqtt_close(struct mosquitto *mosquitto);
 int mqtt_handle(struct mosquitto *mosquitto);
 int mqtt_publish(struct mosquitto *mosquitto,
-		 const struct fhz_decoded *decoded);
+		 const struct fhz_message *message);

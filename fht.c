@@ -252,7 +252,7 @@ const static struct fht_command fht_commands[] = {
 	},
 };
 
-int fht_decode(const struct payload *payload, struct fht_decoded *decoded)
+int fht_decode(const struct payload *payload, struct fht_message *message)
 {
 	const static unsigned char magic_ack[] = {0x83, 0x09, 0x83, 0x01};
 	const static unsigned char magic_status[] = {0x09, 0x09, 0xa0, 0x01};
@@ -265,13 +265,13 @@ int fht_decode(const struct payload *payload, struct fht_decoded *decoded)
 		return -EINVAL;
 
 	if (!memcmp(payload->data, magic_ack, sizeof(magic_ack))) {
-		decoded->type = ACK;
+		message->type = ACK;
 		cmd = payload->data[6];
 		fht_message_raw.value = payload->data[7];
 	} else if (!memcmp(payload->data, magic_status, sizeof(magic_status))) {
 		if (payload->len != 10)
 			return -EINVAL;
-		decoded->type = STATUS;
+		message->type = STATUS;
 		cmd = payload->data[6];
 		fht_message_raw.subfun = payload->data[7];
 		fht_message_raw.status = payload->data[8];
@@ -279,15 +279,15 @@ int fht_decode(const struct payload *payload, struct fht_decoded *decoded)
 	} else
 		return -EINVAL;
 
-	decoded->hauscode = *(const struct hauscode*)(payload->data + 4);
-	decoded->topic2 = NULL;
+	message->hauscode = *(const struct hauscode*)(payload->data + 4);
+	message->topic2 = NULL;
 
 	if (cmd == FHT_STATUS) {
-		decoded->topic1 = "window";
-		snprintf(decoded->value1, sizeof(decoded->value1), "%s",
+		message->topic1 = "window";
+		snprintf(message->value1, sizeof(message->value1), "%s",
 			 fht_message_raw.value & (1 << 5) ? "open" : "close");
-		decoded->topic2 = "battery";
-		snprintf(decoded->value2, sizeof(decoded->value2), "%s",
+		message->topic2 = "battery";
+		snprintf(message->value2, sizeof(message->value2), "%s",
 			 fht_message_raw.value & (1 << 0) ? "empty" : "ok");
 		return 0;
 	}
@@ -295,9 +295,9 @@ int fht_decode(const struct payload *payload, struct fht_decoded *decoded)
 	for_each_fht_command(fht_commands, fht_command, i) {
 		if (fht_command->function_id != cmd)
 			continue;
-		decoded->topic1 = fht_command->name;
-		return fht_command->output_conversion(decoded->value1,
-					              sizeof(decoded->value1),
+		message->topic1 = fht_command->name;
+		return fht_command->output_conversion(message->value1,
+					              sizeof(message->value1),
 						      &fht_message_raw);
 	}
 

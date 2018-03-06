@@ -35,7 +35,7 @@ int main(int argc, const char **argv)
 	const char *hostname = MQTT_DEFAULT_HOSTNAME;
 	unsigned int port = MQTT_DEFAULT_PORT;
 	struct mosquitto *mosquitto;
-	struct fhz_decoded decoded;
+	struct fhz_message message;
 	int err, fd;
 
 	if (argc < 4 && argc != 2)
@@ -63,11 +63,11 @@ int main(int argc, const char **argv)
 	}
 
 	do {
-		err = fhz_handle(fd, &decoded);
+		err = fhz_handle(fd, &message);
 		if (err && err != -EAGAIN)
 			error("Error decoding packet: %s\n", strerror(-err));
 		else if (!err) {
-			err = mqtt_publish(mosquitto, &decoded);
+			err = mqtt_publish(mosquitto, &message);
 			if (err)
 				fprintf(stderr, "Unable to publish FHZ message to mqtt\n");
 		}

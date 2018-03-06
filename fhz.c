@@ -117,7 +117,7 @@ static int fhz_receive(int fd, struct payload *payload)
 	return 0;
 }
 
-int fhz_handle(int fd, struct fhz_decoded *decoded)
+int fhz_handle(int fd, struct fhz_message *message)
 {
 	struct payload payload;
 	int err;
@@ -126,9 +126,9 @@ int fhz_handle(int fd, struct fhz_decoded *decoded)
 	if (err)
 		return err;
 
-	err = fht_decode(&payload, &decoded->fht);
+	err = fht_decode(&payload, &message->fht);
 	if (!err) {
-		decoded->machine = FHT;
+		message->machine = FHT;
 		return 0;
 	} else if (!(err == -EINVAL || err == -EAGAIN)) {
 		return err;

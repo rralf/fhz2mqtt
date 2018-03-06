@@ -21,7 +21,7 @@ struct hauscode {
 	unsigned char lower;
 } __attribute__((packed));
 
-struct fht_decoded {
+struct fht_message {
 	enum {STATUS, ACK} type;
 	struct hauscode hauscode;
 	const char *topic1;
@@ -50,6 +50,6 @@ static inline int hauscode_from_string(const char *string,
 	return 0;
 }
 
-int fht_decode(const struct payload *payload, struct fht_decoded *decoded);
+int fht_decode(const struct payload *payload, struct fht_message *message);
 int fht_set(int fd, const struct hauscode *hauscode,
 	    const char *command, const char *payload);
