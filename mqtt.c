@@ -103,7 +103,7 @@ static int mqtt_publish_fht(struct mosquitto *mosquitto, const struct fht_messag
 
 	publish(mosquitto, type, &message->hauscode,
 		message->topic1, message->value1);
-	if (message->topic2)
+	if (strlen(message->topic2))
 		publish(mosquitto, type, &message->hauscode,
 			message->topic2, message->value2);
 

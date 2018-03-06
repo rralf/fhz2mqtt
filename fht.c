@@ -280,13 +280,13 @@ int fht_decode(const struct payload *payload, struct fht_message *message)
 		return -EINVAL;
 
 	message->hauscode = *(const struct hauscode*)(payload->data + 4);
-	message->topic2 = NULL;
+	message->topic2[0] = 0;
 
 	if (cmd == FHT_STATUS) {
-		message->topic1 = "window";
+		strncpy(message->topic1, "window", sizeof(message->topic1));
 		snprintf(message->value1, sizeof(message->value1), "%s",
 			 fht_message_raw.value & (1 << 5) ? "open" : "close");
-		message->topic2 = "battery";
+		strncpy(message->topic2, "battery", sizeof(message->topic2));
 		snprintf(message->value2, sizeof(message->value2), "%s",
 			 fht_message_raw.value & (1 << 0) ? "empty" : "ok");
 		return 0;
@@ -295,7 +295,9 @@ int fht_decode(const struct payload *payload, struct fht_message *message)
 	for_each_fht_command(fht_commands, fht_command, i) {
 		if (fht_command->function_id != cmd)
 			continue;
-		message->topic1 = fht_command->name;
+		if (fht_command->name)
+			strncpy(message->topic1, fht_command->name,
+				sizeof(message->topic1));
 		return fht_command->output_conversion(message->value1,
 					              sizeof(message->value1),
 						      &fht_message_raw);

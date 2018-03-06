@@ -24,8 +24,8 @@ struct hauscode {
 struct fht_message {
 	enum {STATUS, ACK} type;
 	struct hauscode hauscode;
-	const char *topic1;
-	const char *topic2;
+	char topic1[16];
+	char topic2[16];
 	char value1[32];
 	char value2[32];
 };
