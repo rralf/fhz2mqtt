@@ -42,6 +42,10 @@
 #define FHT_IS_TEMP_HIGH 0x43
 #define FHT_STATUS 0x44
 #define FHT_MANU_TEMP 0x45
+#define FHT_ACK 0x4b
+#define FHT_ACK2 0x69
+#define FHT_START_XMIT 0x7d
+#define FHT_END_XMIT 0x7e
 #define FHT_DAY_TEMP 0x82
 #define FHT_NIGHT_TEMP 0x84
 #define FHT_WINDOW_OPEN_TEMP 0x8a
@@ -240,12 +244,27 @@ static int fht_status_to_str(struct fht_message *message,
 	return 0;
 }
 
+static int fht_ignore(struct fht_message *message,
+		      const struct fht_message_raw *raw)
+{
+	printf("ignored %02x: %02x %02x %02x\n", raw->cmd, raw->subfun,
+	       raw->status, raw->value);
+	return 0;
+}
+
 #define DEFINE_VALVE(__no) \
 	{ \
 		.function_id = FHT_VALVE_##__no, \
 		.name = "valve/" __stringify(__no), \
 		.input_conversion = input_not_accepted, \
 		.output_conversion = fht_percentage_to_str, \
+	}
+
+#define DEFINE_IGNORE(__no) \
+	{ \
+		.function_id = __no, \
+		.input_conversion = input_not_accepted, \
+		.output_conversion = fht_ignore, \
 	}
 
 static const struct fht_command fht_commands[] = {
@@ -298,6 +317,11 @@ static const struct fht_command fht_commands[] = {
 		.input_conversion = payload_to_fht_temp,
 		.output_conversion = fht_temp_to_str,
 	},
+	/* ack, ack2, {start,end}-xmit, we don't forward this */
+	DEFINE_IGNORE(FHT_ACK),
+	DEFINE_IGNORE(FHT_ACK2),
+	DEFINE_IGNORE(FHT_START_XMIT),
+	DEFINE_IGNORE(FHT_END_XMIT),
 	/* day temp */ {
 		.function_id = FHT_DAY_TEMP,
 		.name = "day-temp",
