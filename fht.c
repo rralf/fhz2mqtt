@@ -209,6 +209,11 @@ static int fht_percentage_to_str(struct fht_message *message,
 		return -EINVAL;
 		/* TBD: submit lime-protection */
 		break;
+	case 0xc: /* synctime */
+		report_printf_topic(message, 0, "synctime");
+		report_printf_value(message, 0, "%u", (raw->value / 2) - 1);
+		return 0;
+		break;
 	case 0xe: /* TEST */
 		return -EINVAL;
 		break;
