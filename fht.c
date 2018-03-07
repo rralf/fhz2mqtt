@@ -195,8 +195,11 @@ static int fht_percentage_to_str(struct fht_message *message,
 	case 0x6:
 		break;
 	case 0x8: /* value contains OFFSET setting */
-		return -EINVAL;
-		/* TBD: implement offset transmission */
+		report_printf_topic(message, 0, "valve/%u/offset", raw->cmd);
+		report_printf_value(message, 0, "%s%u",
+				    raw->value & 0x80 ? "-" : "",
+				    raw->value & 0x7f);
+		return 0;
 		break;
 	case 0xa: /* lime-protection */
 		/* lime-protection bug, value contains valve setting */
