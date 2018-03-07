@@ -77,9 +77,9 @@ struct fht_command {
 	    (counter) < ARRAY_SIZE((commands)); \
 	    (counter)++, (command)++)
 
-const static char s_mode_auto[] = "auto";
-const static char s_mode_holiday[] = "holiday";
-const static char s_mode_manual[] = "manual";
+static const char s_mode_auto[] = "auto";
+static const char s_mode_holiday[] = "holiday";
+static const char s_mode_manual[] = "manual";
 
 static unsigned char temp_low;
 
@@ -240,7 +240,7 @@ static int fht_status_to_str(struct fht_message *message,
 		.output_conversion = fht_percentage_to_str, \
 	}
 
-const static struct fht_command fht_commands[] = {
+static const struct fht_command fht_commands[] = {
 	/* is valve */ {
 		.function_id = FHT_IS_VALVE,
 		.name = "is-valve",
@@ -312,8 +312,8 @@ const static struct fht_command fht_commands[] = {
 
 int fht_decode(const struct payload *payload, struct fht_message *message)
 {
-	const static unsigned char magic_ack[] = {0x83, 0x09, 0x83, 0x01};
-	const static unsigned char magic_status[] = {0x09, 0x09, 0xa0, 0x01};
+	static const unsigned char magic_ack[] = {0x83, 0x09, 0x83, 0x01};
+	static const unsigned char magic_status[] = {0x09, 0x09, 0xa0, 0x01};
 	struct fht_message_raw fht_message_raw = {0, 0, 0, 0};
 	const struct fht_command *fht_command;
 	int i;
