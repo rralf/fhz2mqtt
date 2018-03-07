@@ -21,6 +21,8 @@
 
 #include "fhz.h"
 
+#define FHT_YEAR_BASE 2000
+
 #define FHT_TEMP_OFF 5.5
 #define FHT_TEMP_ON 30.5
 
@@ -43,6 +45,11 @@
 #define FHT_STATUS 0x44
 #define FHT_MANU_TEMP 0x45
 #define FHT_ACK 0x4b
+#define FHT_YEAR 0x60
+#define FHT_MONTH 0x61
+#define FHT_DAY 0x62
+#define FHT_HOUR 0x63
+#define FHT_MINUTE 0x64
 #define FHT_ACK2 0x69
 #define FHT_START_XMIT 0x7d
 #define FHT_END_XMIT 0x7e
@@ -170,6 +177,115 @@ static int fht_is_temp_high_to_str(struct fht_message *message,
 {
 	report_printf_value(message, 0, "%0.2f",
 			    ((float)temp_low + (float)raw->value* 256)/10.0);
+	return 0;
+}
+
+static int payload_to_fht_year(const char *payload)
+{
+	unsigned int year;
+
+	if (sscanf(payload, "%u", &year) != 1)
+		return -EINVAL;
+
+	return year - FHT_YEAR_BASE;
+}
+
+static int fht_year_to_str(struct fht_message *message,
+			   const struct fht_message_raw *raw)
+{
+	report_printf_value(message, 0, "%u", FHT_YEAR_BASE + raw->value);
+	return 0;
+}
+
+static int payload_to_fht_month(const char *payload)
+{
+	unsigned int month;
+
+	if (sscanf(payload, "%u", &month) != 1)
+		return -EINVAL;
+
+	if (month > 12)
+		return -EINVAL;
+
+	return month;
+}
+
+static int fht_month_to_str(struct fht_message *message,
+			   const struct fht_message_raw *raw)
+{
+	if (raw->value > 12)
+		return -EINVAL;
+
+	report_printf_value(message, 0, "%u", raw->value);
+	return 0;
+}
+
+static int payload_to_fht_day(const char *payload)
+{
+	unsigned int day;
+
+	if (sscanf(payload, "%u", &day) != 1)
+		return -EINVAL;
+
+	if (day > 31)
+		return -EINVAL;
+
+	return day;
+}
+
+static int fht_day_to_str(struct fht_message *message,
+			  const struct fht_message_raw *raw)
+{
+	if (raw->value > 31)
+		return -EINVAL;
+
+	report_printf_value(message, 0, "%u", raw->value);
+	return 0;
+}
+
+static int payload_to_fht_hour(const char *payload)
+{
+	unsigned int hour;
+
+	if (sscanf(payload, "%u", &hour) != 1)
+		return -EINVAL;
+
+	if (hour > 24)
+		return -EINVAL;
+
+	return hour;
+}
+
+static int fht_hour_to_str(struct fht_message *message,
+			   const struct fht_message_raw *raw)
+{
+	if (raw->value > 24)
+		return -EINVAL;
+
+	report_printf_value(message, 0, "%u", raw->value);
+	return 0;
+}
+
+static int payload_to_fht_minute(const char *payload)
+{
+	unsigned int minute;
+
+	if (sscanf(payload, "%u", &minute) != 1)
+		return -EINVAL;
+
+	if (minute > 59)
+		return -EINVAL;
+
+	return minute;
+}
+
+static int fht_minute_to_str(struct fht_message *message,
+			     const struct fht_message_raw *raw)
+{
+	if (raw->value > 59)
+		return -EINVAL;
+
+	report_printf_value(message, 0, "%u", raw->value);
 	return 0;
 }
 
@@ -319,6 +435,36 @@ static const struct fht_command fht_commands[] = {
 	},
 	/* ack, ack2, {start,end}-xmit, we don't forward this */
 	DEFINE_IGNORE(FHT_ACK),
+	/* year */ {
+		.function_id = FHT_YEAR,
+		.name = "year",
+		.input_conversion = payload_to_fht_year,
+		.output_conversion = fht_year_to_str,
+	},
+	/* month */ {
+		.function_id = FHT_MONTH,
+		.name = "month",
+		.input_conversion = payload_to_fht_month,
+		.output_conversion = fht_month_to_str,
+	},
+	/* day */ {
+		.function_id = FHT_DAY,
+		.name = "day",
+		.input_conversion = payload_to_fht_day,
+		.output_conversion = fht_day_to_str,
+	},
+	/* hour */ {
+		.function_id = FHT_HOUR,
+		.name = "hour",
+		.input_conversion = payload_to_fht_hour,
+		.output_conversion = fht_hour_to_str,
+	},
+	/* minute */ {
+		.function_id = FHT_MINUTE,
+		.name = "minute",
+		.input_conversion = payload_to_fht_minute,
+		.output_conversion = fht_minute_to_str,
+	},
 	DEFINE_IGNORE(FHT_ACK2),
 	DEFINE_IGNORE(FHT_START_XMIT),
 	DEFINE_IGNORE(FHT_END_XMIT),
